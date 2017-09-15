@@ -82,7 +82,7 @@ public:
   void BuildFrom(TSmartBuffer& raw);
 
 
-  Double_t GetTime()            const { return (double)Timestamp() - (double)fWalkCorrection; } 
+  Double_t GetTime()            const { return (double)Timestamp() + (double)fWalkCorrection; } 
   Float_t  GetT0()              const { return fWalkCorrection; }
   Float_t  GetTFit()            const { return fWalkCorrection - fTOffset; }
   Float_t  GetTOffset()         const { return fTOffset; }
@@ -146,7 +146,7 @@ public:
       tmp = fCoreEnergy*gamma *(1 - beta*TMath::Cos(GetPosition().Angle(*vec)));
     return tmp;
   } 
-  
+  double GetDopplerYta(double beta, double yta, const TVector3 *vec = 0, int EngRange = -1) const; 
   double GetDoppler(const TS800 *s800,bool doDTAcorr=false,int EngRange=-1);
   double GetDoppler_dB(double beta,const TVector3 *vec=0, double Dta=0);
 
