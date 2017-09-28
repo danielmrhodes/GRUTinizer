@@ -33,22 +33,17 @@ std::vector<GCutG*> time_energy_cuts = {0};
 
 int gates_loaded=0;
 
-
 std::map<int,int> detMap = {{26,1}, {30,2}, {34,3}, {38,4}, {25,5}, {29,6}, {33,7}, {37,8}, {27,9}, {31,10}, {35,11}, {39,12},
-			    {24,13}, {28,14}, {32,15}, {36,16}, {63,17}, {71,18}, {79,19}, {59,20}, {67,21}, {58,22}, {66,23},			             {60,24}, {68,25}, {76,26}, {62,27}, {70,28}, {78,29}, {56,30}, {64,31}, {57,32}, {65,33}, {61,34},
+			    {24,13},{28,14},{32,15},{36,16},{63,17},{71,18},{79,19},{59,20},{67,21},{58,22}, {66,23}, {60,24},
+			    {68,25}, {76,26}, {62,27}, {70,28}, {78,29}, {56,30}, {64,31}, {57,32}, {65,33}, {61,34},
 			    {69,35}, {77,36}};
-
-//std::map<int,int> detMap = {{26,0}, {30,1}, {34,2}, {38,3}, {25,4}, {29,5}, {33,6}, {37,7}, {27,8}, {31,9}, {35,10}, {39,11},
-//			    {24,12}, {28,13}, {32,14}, {36,15}, {59, 16}, {63, 17}, {67, 18}, {71, 19}, {79, 20}, {58, 21},
-//			    {60, 22}, {66, 23}, {68, 24}, {76, 25}, {56, 26}, {62, 27}, {64, 28}, {70, 29}, {78, 30}, {57, 31},
-//			    {61, 32}, {65, 33}, {69, 34}, {77, 35}, {57, 36}, {61, 37}, {65, 38},  {69, 39}};
 
 std::map<int,int> quadMap = {{5,1}, {6,2}, {7,3}, {8,4}, {14,5}, {16,6}, {18,7}, {13,8}, {15,9}};
 
 std::map<int,int> crysThetaMap = {{26,1}, {30,1}, {34,1}, {38,1}, {25,2}, {29,2}, {33,2}, {37,2}, {27,3}, {31,3}, {35,3}, {39,3},
 				  {24,4}, {28,4}, {32,4}, {36,4}, {63,5}, {71,5}, {79,5}, {59,6}, {67,6}, {58,7}, {66,7}, {60,8},
-				  {68,8}, {76,8}, {62,9}, {70,9}, {78,9},
-				  {56,10}, {64,10}, {57,11}, {65,11}, {61,12}, {69,12}, {77,12}};
+				  {68,8}, {76,8}, {62,9}, {70,9}, {78,9}, {56,10},{64,10},{57,11},{65,11},{61,12},{69,12},
+				  {77,12}};
 /*
 detMap[26]=1;
 detMap[30]=2;
@@ -99,7 +94,7 @@ detMap[69]=35;
 detMap[77]=36;
 */
 
-bool HandleTiming(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) {
+bool HandleTiming_Gated(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) {
   TS800 *s800  = obj.GetDetector<TS800>();
   //TBank29 *bank29  = obj.GetDetector<TBank29>();
   
@@ -207,7 +202,7 @@ bool HandleS800(TRuntimeObjects &obj) {
   return true;
 }
 
-bool s800Singles(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
+bool HandleS800Singles_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
   TS800 *s800  = obj.GetDetector<TS800>();  
 
   if(!s800)
@@ -731,16 +726,13 @@ bool HandleGretina(TRuntimeObjects &obj) {
 
 	 obj.FillHistogram(dirname,"CrystalPhi_v_DetMap",100,0,100,detMap[hit.GetCrystalId()]
 			   ,452,0,6.3,(gretina->GetCrystalPosition(hit.GetCrystalId())).Phi());
-
-	 //obj.FillHistogram(dirname,"CoreEnergy_v_DetMap",38,0,38,detMap[hit.GetCrystalId()]
-	 //		                                ,2000,0,4000,hit.GetCoreEnergy());
 	 
                                                              
          //plots with s800
          //TS800 *s800 = obj.GetDetector<TS800>();
          //if(!s800) {return false;}
       
-        } 
+        } //end if(hit.GetCoreEnergy > 100) 
     }
 
 
@@ -748,44 +740,44 @@ bool HandleGretina(TRuntimeObjects &obj) {
 
 }
 
-bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800,TBank29* bank29,
-				std::string dirname, TCutG* incoming, TCutG* outgoing, TCutG* time_energy=NULL) {
+bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj, TGretinaHit hit, TS800* s800, TBank29* bank29 ,int size,
+				bool ab, TCutG* incoming, TCutG* outgoing, TCutG* time_energy) {
+
+  std::string dirname;
 
   if(hit.GetCoreEnergy() > 100) {
 
+    TVector3 track = s800->Track();
+    double yta = s800->GetYta();
+
+    if(ab)
+      {dirname="AB_GretinaAndS800";}
+    else
+      {dirname="GretinaAndS800";}
     if(incoming)
       {dirname+=Form("_%s",incoming->GetName());}
-
     if(time_energy)
       {dirname+=Form("_%s",time_energy->GetName());}
 
-      TVector3 track = s800->Track();
-      double yta = s800->GetYta();
+    obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_v_DTA_%s",outgoing->GetName())
+		      ,1500,-0.5,0.5,s800->GetDta()
+		      ,1000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
 
+    if(ab)
+      {dirname="AB_Gretina";}
+    else
+      {dirname="Gretina";}
+    if(incoming)
+      {dirname+=Form("_%s",incoming->GetName());}
+    if(time_energy)
+      {dirname+=Form("_%s",time_energy->GetName());}
+
+      //Detector Map
       obj.FillHistogram(dirname,Form("HitTheta_v_DetMap_%s",outgoing->GetName()),100,0,100,crysThetaMap[hit.GetCrystalId()]
 			                                                        ,226,0,3.2,hit.GetTheta());
 
       obj.FillHistogram(dirname,Form("HitPhi_v_DetMap_%s",outgoing->GetName()),100,0,100,crysThetaMap[hit.GetCrystalId()]
 			                                                      ,452,0,6.3,hit.GetPhi());
-
-      obj.FillHistogram(dirname,Form("HitTheta_v_CrysThetaMap_%s",outgoing->GetName()),100,0,100,crysThetaMap[hit.GetCrystalId()]
-			                                                              ,226,0,3.2,hit.GetTheta());
-
-      obj.FillHistogram(dirname,Form("HitPhi_v_CrysThetaMap_%s",outgoing->GetName()),100,0,100,crysThetaMap[hit.GetCrystalId()]
-			                                                            ,452,0,6.3,hit.GetPhi());
-      
-      //Gamma Ray Spectra
-      obj.FillHistogram(dirname,Form("Gamma(Beta)_%s",outgoing->GetName()),1000,0,4000,hit.GetDoppler(GValue::Value("BETA")));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_%s",outgoing->GetName())
-			                                   ,1000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_%s",outgoing->GetName())
-			,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)_%s",outgoing->GetName())
-			,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
-      
 
       //Gretina Timing
       obj.FillHistogram(dirname,Form("Gamma_v_Time_%s",outgoing->GetName())
@@ -796,17 +788,350 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800
 		                                           ,600,-400,800,bank29->Timestamp() - hit.Timestamp()
                                                            ,2000,0,8000,hit.GetDoppler(GValue::Value("BETA"),&track));
 
-      if(!incoming || !time_energy)
-	{return false;}  
+      
+      //Gamma Ray Spectra
+      obj.FillHistogram(dirname,Form("Gamma(Beta)_%s",outgoing->GetName()),2000,0,4000,hit.GetDoppler(GValue::Value("BETA")));
 
-      dirname = Form("GretAngCorrs_%s_%s",incoming->GetName(),time_energy->GetName());
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_%s",outgoing->GetName())
+			                                   ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_%s",outgoing->GetName())
+			,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)_%s",outgoing->GetName())
+			,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
+
+      
+      //Quad, Crystal, and Theta-Phi Summaries
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_CrystalId_%s",outgoing->GetName())
+			,100,0,100,hit.GetCrystalId()
+			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
+      
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_QuadNum_%s",outgoing->GetName())
+			                                             ,100,0,100,hit.GetHoleNumber()
+			                                             ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_Quad(T-P)_%s",outgoing->GetName())
+		        ,100,0,100,quadMap[hit.GetHoleNumber()]
+			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_v_Quad(T-P)_%s",outgoing->GetName())
+			,100,0,100,quadMap[hit.GetHoleNumber()]
+			,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_Crys(Theta-Phi)_%s",outgoing->GetName())
+		        ,38,0,38,detMap[hit.GetCrystalId()]
+			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_v_Crys(Theta-Phi)_%s",outgoing->GetName())
+			,38,0,38,detMap[hit.GetCrystalId()]
+			,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+  
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)_v_Crys(Theta-Phi)_%s",outgoing->GetName())
+      			,38,0,38,detMap[hit.GetCrystalId()]
+			,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
+
+      /*
+      if(ab)
+        {dirname="AB_GretinaBetaSummaries";}
+      else
+        {dirname="GretinaBetaSummaries";}
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
+      for(int i=0; i<30; i++) {
+	
+	obj.FillHistogram(dirname,Form("Gamma(Beta_%f)_v_Crys(Theta-Phi)_%s",(0.384+(i*.001)),outgoing->GetName())
+			                                                    ,38,0,38,detMap[hit.GetCrystalId()]
+			                                                    ,2000,0,4000,hit.GetDoppler(0.384+(i*.001)));
+
+        obj.FillHistogram(dirname,Form("Gamma(Beta_%f&Track)_v_Crys(Theta-Phi)_%s",(0.384+(i*.001)),outgoing->GetName())
+			  ,38,0,38,detMap[hit.GetCrystalId()],2000,0,4000,hit.GetDoppler(0.384+(i*.001),&track));
+      }
+      */
+
+      
+      for(int x=1; x<4; x++) {
+	if(size == x) {
+
+	if(ab)
+          {dirname="AB_Gretina";}
+        else
+          {dirname="Gretina";}
+        if(incoming)
+          {dirname+=Form("_%s",incoming->GetName());}
+        if(time_energy)
+          {dirname+=Form("_%s",time_energy->GetName());}
+    
+	obj.FillHistogram(dirname,Form("Gamma(Beta)Mult%i_%s",size,outgoing->GetName())
+			  ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA")));
+
+        obj.FillHistogram(dirname,Form("Gamma(Beta&Track)Mult%i_%s",size,outgoing->GetName())
+			  ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
+
+        obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)Mult%i_%s",size,outgoing->GetName())
+			  ,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+        obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)Mult%i_%s",size,outgoing->GetName())
+			  ,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
+
+	if(ab)
+          {dirname="AB_GretinaAndS800";}
+        else
+	  {dirname="GretinaAndS800";}
+        if(incoming)
+          {dirname+=Form("_%s",incoming->GetName());}
+        if(time_energy)
+          {dirname+=Form("_%s",time_energy->GetName());}
+
+        obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)Mult%i_v_DTA_%s",x,outgoing->GetName())
+		          ,1500,-0.5,0.5,s800->GetDta()
+		          ,1000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+	} //end if(size == x)
+      } //end multiplicity loop
+
+      
+      //Detector (Crystal) Level
+      if(ab)
+      {dirname="AB_GammDetLevel";}
+      else
+        {dirname="GammaDetLevel";}
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta)_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()],outgoing->GetName())
+			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA")));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()],outgoing->GetName())
+			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()],outgoing->GetName())
+			,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()],outgoing->GetName())
+			,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
+
+      
+      //Quad (Hole) Level
+      if(ab)
+        {dirname="AB_GammaQuadLevel";}
+      else
+        dirname="GammaQuadLevel";
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta)_Quad(T-P)%i_%s",quadMap[hit.GetHoleNumber()],outgoing->GetName())
+			                                         ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA")));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_Quad(T-P)%i_%s",quadMap[hit.GetHoleNumber()],outgoing->GetName())
+			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_Quad(T-P)%i_%s",quadMap[hit.GetHoleNumber()],outgoing->GetName())
+			,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)_Quad(T-P)%i_%s",quadMap[hit.GetHoleNumber()],outgoing->GetName())
+			,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
+
+    
+      //Crys Theta Level
+      if(ab)
+        {dirname="AB_GammaCrysThetaLevel";}
+      else
+        {dirname="GammaCrysThetaLevel";}
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta)_Crys(Theta)%i_%s",crysThetaMap[hit.GetCrystalId()],outgoing->GetName())
+			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA")));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_Crys(Theta)%i_%s",crysThetaMap[hit.GetCrystalId()],outgoing->GetName())
+			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_Crys(Theta)%i_%s",crysThetaMap[hit.GetCrystalId()]
+			,outgoing->GetName())
+			,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)_Crys(Theta)%i_%s",crysThetaMap[hit.GetCrystalId()]
+			,outgoing->GetName())
+			,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
+      
+    }//end if(hit.GetCoreEnergy > 100) 
+
+  return true;
+
+}
+
+bool GammaGamma(TRuntimeObjects& obj, TGretinaHit hit1, TGretinaHit hit2, TS800 *s800, int size, bool ab,
+		TCutG* incoming, TCutG* outgoing, TCutG* time_energy) {
+
+  std::string dirname;
+
+  if(hit1.GetCoreEnergy() > 100 && hit2.GetCoreEnergy() > 100) {
+
+  TVector3 track = s800->Track();
+  double yta = s800->GetYta();
+
+  if(ab)
+    {dirname="AB_GammaGamma";}
+  else
+    {dirname="GammaGamma";};
+  if(incoming)
+    {dirname+=Form("_%s",incoming->GetName());}
+  if(time_energy)
+    {dirname+=Form("_%s",time_energy->GetName());}
+  
+  obj.FillHistogram(dirname,Form("GammaGamma(Beta)_%s",outgoing->GetName()),2000,0,4000,hit1.GetDoppler(GValue::Value("BETA"))
+		                                                           ,2000,0,4000,hit2.GetDoppler(GValue::Value("BETA")));
+
+  obj.FillHistogram(dirname,Form("GammaGamma(Beta&Track)_%s",outgoing->GetName())
+		                                            ,2000,0,4000,hit1.GetDoppler(GValue::Value("BETA"),&track)
+		                                            ,2000,0,4000,hit2.GetDoppler(GValue::Value("BETA"),&track));
+
+  obj.FillHistogram(dirname,Form("GammaGamma(Beta&Track&YTA)_%s",outgoing->GetName())
+		    ,2000,0,4000,hit1.GetDopplerYta(GValue::Value("BETA"),yta,&track)
+		    ,2000,0,4000,hit2.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+  obj.FillHistogram(dirname,Form("GammaGamma(Beta&Track&YTA&DTA)_%s",outgoing->GetName())
+		    ,2000,0,4000,hit1.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track)
+		    ,2000,0,4000,hit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
+
+  for(int x=2; x<4; x++) {
+  if(size == x) {
+
+    obj.FillHistogram(dirname,Form("GammaGamma(Beta)Mult%i_%s",x,outgoing->GetName())
+		                                                ,2000,0,4000,hit1.GetDoppler(GValue::Value("BETA"))
+		                                                ,2000,0,4000,hit2.GetDoppler(GValue::Value("BETA")));
+
+    obj.FillHistogram(dirname,Form("GammaGamma(Beta&Track)Mult%i_%s",x,outgoing->GetName())
+		      ,2000,0,4000,hit1.GetDoppler(GValue::Value("BETA"),&track)
+		      ,2000,0,4000,hit2.GetDoppler(GValue::Value("BETA"),&track));
+
+    obj.FillHistogram(dirname,Form("GammaGamma(Beta&Track&YTA)Mult%i_%s",x,outgoing->GetName())
+		      ,2000,0,4000,hit1.GetDopplerYta(GValue::Value("BETA"),yta,&track)
+		      ,2000,0,4000,hit2.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+    obj.FillHistogram(dirname,Form("GammaGamma(Beta&Track&YTA&DTA)Mult%i_%s",x,outgoing->GetName())
+		      ,2000,0,4000,hit1.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track)
+		      ,2000,0,4000,hit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
+      
+      
+  } //end if(size== x)
+  } //end multiplicity for loop
+
+  } //end if(hit1.GetCoreEnergy > 100 && hit2.GetCoreEnergy > 100)
+
+  return true;
+  
+}
+
+bool HandleS800andGretina_Gated(TRuntimeObjects &obj, TCutG* incoming, TCutG* outgoing, TCutG* time_energy) {
+  TS800 *s800  = obj.GetDetector<TS800>();
+  TGretina *gretina  = obj.GetDetector<TGretina>();
+  TBank29 *bank29 = obj.GetDetector<TBank29>();
+
+  std::string dirname = "s800AndGretina";
+
+  if(!s800 || !gretina || !bank29)
+    {return false;}
+
+  TVector3 track = s800->Track();
+  double yta = s800->GetYta();
+
+  ///////////////////////////////////////////////////////
+  //incoming gates on Xfp - E1 vs. OBJ - E1 Uncorrected//
+  ///////////////////////////////////////////////////////
+  if(incoming) {
+    {dirname+=Form("_%s",incoming->GetName());}
+    bool passed = false;  
+    if(incoming->IsInside(s800->GetMTof().GetCorrelatedObjE1(),s800->GetMTof().GetCorrelatedXfpE1())) {
+      passed=true;
+    }
+    if(!passed)
+      {return false;}
+    } //end incoming gate
+
+  ///////////////////////////////////////////////////////////////////
+  //OUTGOING GATES on Ion Chamber Charge vs Object - E1 (Corrected)//
+  ///////////////////////////////////////////////////////////////////
+  if(!outgoing)
+    {return false;}
+  if(!outgoing->IsInside(s800->GetMTofObjE1(),s800->GetIonChamber().Charge()))
+    {return false;}
+
+  if(!gretina)
+    {return false;}
+
+  //////////////////////////////////////////////////////////////////////////
+  //Time-Energy Gate on Gamma Enery vs Banke29 TimeStamp - GretinaHit Time//
+  //////////////////////////////////////////////////////////////////////////
+  if(time_energy) {
+   {dirname+=Form("_%s",time_energy->GetName());}
+   for(unsigned int i=0;i<gretina->Size();i++) { 
+     TGretinaHit hit = gretina->GetGretinaHit(i);
+     if(!time_energy->IsInside(bank29->Timestamp() - hit.GetTime(),hit.GetDoppler(GValue::Value("BETA"),&track)))
+       {return false;}
+
+     if(hit.GetCoreEnergy() > 100) {
+
+       obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_v_DTA_%s",outgoing->GetName())
+			 ,500,-0.5,0.5,s800->GetDta()
+			 ,1000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+     } //end if(hit.GetCoreEnergy > 100)
+
+   } //end loop over gretina hits
+  } //end if(time_energy)
+  
+   if(!time_energy) {
+     for(unsigned int i=0;i<gretina->Size();i++) {
+        TGretinaHit hit = gretina->GetGretinaHit(i);
+
+        if(hit.GetCoreEnergy() > 100) {
+
+          obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_v_DTA_%s",outgoing->GetName())
+			 ,500,-0.5,0.5,s800->GetDta()
+			 ,1000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+        } //end if(hit.GetCoreEnergy() > 100)
+
+     } //end loop over gretina hits
+
+   } //end if(!time_energy)
+   
+  return true;
+
+}
+
+bool GammaCorrelations(TRuntimeObjects &obj, TGretinaHit hit, TS800* s800, TCutG* incoming, TCutG* outgoing,
+		       TCutG* time_energy) {
+
+  std::string dirname;
+  
+  if(hit.GetCoreEnergy() > 100) {
+    
+    dirname="GretTotAngCorrs";
+    if(incoming)
+      {dirname+=Form("_%s",incoming->GetName());}
+    if(time_energy)
+      {dirname+=Form("_%s",time_energy->GetName());}
+
+      TVector3 track = s800->Track();
+      double yta = s800->GetYta();
       
       TVector3 incBeam = TVector3(0.0,0.0,1.0);
       TVector3 reacPlane = track.Cross(incBeam);
       TVector3 detPlane = (hit.GetPosition()).Cross(incBeam);
 
       //simple angle between the vectors
-      double angle = TMath::ACos((reacPlane.Dot(detPlane))/(reacPlane.Mag()*detPlane.Mag()));
+      //double angle = TMath::ACos((reacPlane.Dot(detPlane))/(reacPlane.Mag()*detPlane.Mag()));
 
       double reac_phi = reacPlane.Phi();
       if(reac_phi < 0)
@@ -820,13 +1145,15 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800
       if(phi1 < 0)
 	{phi1 += TMath::TwoPi();}
 
-      double phi2 = (2.0*TMath::Pi()-s800->Azita())-TMath::Abs(hit.GetPhi());
+      double phi2 = 2.0*TMath::Pi() - s800->Azita() - hit.GetPhi();
       if(phi2 < 0)
 	{phi2 += TMath::TwoPi();}
       
       //phi1 and phi2 should be equivalent
       //phi and angle are no longer equivalent (from above); phi runs from 0 to 2pi, angle runs from 0 to pi
       //Phi, Angle, and Azita
+
+      //Check if phi1 and phi2 are equivalent
       obj.FillHistogram(dirname,Form("Phi2-Phi1_%s",outgoing->GetName()),400,-6.3,6.3,phi2-phi1);
       
       //Phi1
@@ -851,6 +1178,7 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800
 			                                          ,400,-6.3,6.3,phi2
 			                                          ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
 
+      /*
       //Angle
       obj.FillHistogram(dirname,Form("Angle_%s",outgoing->GetName()),400,-6.3,6.3,angle);
 
@@ -860,94 +1188,31 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800
 
       obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_Angle_%s",outgoing->GetName()),400,-6.3,6.3,angle
       			                                           ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
+      */
+
       
-      //Azita
-      obj.FillHistogram(dirname,Form("Azita_%s",outgoing->GetName()),400,-6.3,6.3,s800->Azita());
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta)_v_Azita_%s",outgoing->GetName())
-			                                     ,400,-6.3,6.3,s800->Azita()
-                                                             ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA")));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_Azita_%s",outgoing->GetName())
-			                                           ,400,-6.3,6.3,s800->Azita()
-			                                           ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
-      
-      
-      //Quad, Crystal, and Theta-Phi Summaries
-      dirname = Form("GretinaSummaries_%s_%s",incoming->GetName(),time_energy->GetName());
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_CrystalId_%s",outgoing->GetName())
-			,100,0,100,hit.GetCrystalId()
-			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
-      
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_QuadNum_%s",outgoing->GetName())
-			                                             ,100,0,100,hit.GetHoleNumber()
-			                                             ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_Quad(T-P)_%s",outgoing->GetName())
-		        ,100,0,100,quadMap[hit.GetHoleNumber()]
-			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_v_Quad(T-P)_%s",outgoing->GetName())
-			,100,0,100,quadMap[hit.GetHoleNumber()]
-			,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
-
-      for(int i=0; i<30; i++) {
-	
-	obj.FillHistogram(dirname,Form("Gamma(Beta_%f)_v_Crys(Theta-Phi)_%s",(0.384+(i*.001)),outgoing->GetName())
-			                                                    ,38,0,38,detMap[hit.GetCrystalId()]
-			                                                    ,2000,0,4000,hit.GetDoppler(0.384+(i*.001)));
-      }
-
-      for(int i=0; i<30; i++) {
-	
-	obj.FillHistogram(dirname,Form("Gamma(Beta_%f&Track)_v_Crys(Theta-Phi)_%s",(0.384+(i*.001)),outgoing->GetName())
-			  ,38,0,38,detMap[hit.GetCrystalId()],2000,0,4000,hit.GetDoppler(0.384+(i*.001),&track));
-      }
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_Crys(Theta-Phi)_%s",outgoing->GetName())
-		        ,38,0,38,detMap[hit.GetCrystalId()]
-			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_v_Crys(Theta-Phi)_%s",outgoing->GetName())
-			,38,0,38,detMap[hit.GetCrystalId()]
-			,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
-  
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)_v_Crys(Theta-Phi)_%s",outgoing->GetName())
-      			,38,0,38,detMap[hit.GetCrystalId()]
-			,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
-
-
-      //Detector (Crystal) Level
-      dirname=Form("GammaDetLevel_%s_%s",incoming->GetName(),time_energy->GetName());
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta)_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()],outgoing->GetName())
-			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA")));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()],outgoing->GetName())
-			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()],outgoing->GetName())
-			,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()],outgoing->GetName())
-			,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
-      
-      
+      //Detector (Crystal) Level Correlations
       //Azita Correlations
-      dirname=Form("AzitaDetLevelCorrs_%s_%s",incoming->GetName(),time_energy->GetName());
+      dirname="AzitaDetLevelCorrs";
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
 
       obj.FillHistogram(dirname,Form("Gamma(Beta)_v_Azita_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()],outgoing->GetName())
 			                                                 ,1000,0,4000,hit.GetDoppler(GValue::Value("BETA"))
 			                                                 ,400,-6.3,6.3,s800->Azita());
-			                                                       
-
+			                                                      
       obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_Azita_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()],outgoing->GetName())
 			,1000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track)
 			,400,-6.3,6.3,s800->Azita());
       
       //Plane Angle (phi) Correlations
-      dirname=Form("PhiDetLevelCorrs_%s_%s",incoming->GetName(),time_energy->GetName());
+      dirname="PhiDetLevelCorrs";
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
 
       obj.FillHistogram(dirname,Form("Gamma(Beta)_v_Phi1_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()],outgoing->GetName())
 			                                                ,1000,0,4000,hit.GetDoppler(GValue::Value("BETA"))
@@ -958,7 +1223,11 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800
 			,400,-6.3,6.3,phi1);
       
       //YTA Correlations
-      dirname=Form("YTADetLevelCorrs_%s_%s",incoming->GetName(),time_energy->GetName());
+      dirname="YTADetLevelCorrs";
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
 
       obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_YTA_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()],outgoing->GetName())
 			,60,-15,15,yta
@@ -969,7 +1238,11 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800
 			,1000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
       
       //DTA Correlations
-      dirname=Form("DTADetLevelCorrs_%s_%s",incoming->GetName(),time_energy->GetName());
+      dirname="DTADetLevelCorrs";
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
 
       obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_v_DTA_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()],outgoing->GetName())
 	                ,500,-0.5,0.5,s800->GetDta(),1000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
@@ -977,34 +1250,30 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800
       obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)_v_DTA_Crys(T-P)%i_%s",detMap[hit.GetCrystalId()]
 			,outgoing->GetName()),500,-0.5,0.5,s800->GetDta()
 			,1000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
+
       
-
-      //Quad (Hole) Level 
-      dirname=Form("GammaQuadLevel_%s_%s",incoming->GetName(),time_energy->GetName());
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_Quad(T-P)%i_%s",quadMap[hit.GetHoleNumber()],outgoing->GetName())
-			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_Quad(T-P)%i_%s",quadMap[hit.GetHoleNumber()],outgoing->GetName())
-			,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)_Quad(T-P)%i_%s",quadMap[hit.GetHoleNumber()],outgoing->GetName())
-			,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
-
+      //Quad (Hole) Level Correlations
       //Azita Correlations
-      dirname=Form("AzitaQuadLevelCorrs_%s_%s",incoming->GetName(),time_energy->GetName());
+      dirname="AzitaQuadLevelCorrs";
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
 
       obj.FillHistogram(dirname,Form("Gamma(Beta)_v_Azita_Quad(T-P)%i_%s",quadMap[hit.GetHoleNumber()],outgoing->GetName())
 			                                                 ,1000,0,4000,hit.GetDoppler(GValue::Value("BETA"))
 			                                                 ,400,-6.3,6.3,s800->Azita());
 			                                                       
-
       obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_Azita_Quad(T-P)%i_%s",quadMap[hit.GetHoleNumber()],outgoing->GetName())
 			,1000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track)
 		        ,400,-6.3,6.3,s800->Azita());
       
       //Plane Angle (phi) Correlations
-      dirname=Form("PhiQuadLevelCorrs_%s_%s",incoming->GetName(),time_energy->GetName());
+      dirname="PhiQuadLevelCorrs";
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
 
       obj.FillHistogram(dirname,Form("Gamma(Beta)_v_Phi1_Quad(T-P)%i_%s",quadMap[hit.GetHoleNumber()],outgoing->GetName())
 		        ,1000,0,4000,hit.GetDoppler(GValue::Value("BETA"))
@@ -1015,7 +1284,11 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800
 			,400,-6.3,6.3,phi1);
       
       //YTA Correlations
-      dirname=Form("YTAQuadLevelCorrs_%s_%s",incoming->GetName(),time_energy->GetName());
+      dirname="YTAQuadLevelCorrs";
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
       
       obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_YTA_Quad(T-P)%i_%s",quadMap[hit.GetHoleNumber()],outgoing->GetName())
 			,60,-15,15,yta
@@ -1027,7 +1300,11 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800
 			,1000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
       
       //DTA Correlations
-      dirname=Form("DTAQuadLevelCorrs_%s_%s",incoming->GetName(),time_energy->GetName());
+      dirname="DTAQuadLevelCorrs";
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
 
       obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_v_DTA_Quad(T-P)%i_%s",quadMap[hit.GetHoleNumber()]
 			,outgoing->GetName())
@@ -1039,39 +1316,29 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800
       	     		,500,-0.5,0.5,s800->GetDta()
 			,1000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
 
-      //Crys Theta Level
-      dirname=Form("GammaCrysThetaLevel_%s_%s",incoming->GetName(),time_energy->GetName());
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta)_Crys(Theta)%i_%s",crysThetaMap[hit.GetCrystalId()],outgoing->GetName())
-			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA")));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_Crys(Theta)%i_%s",crysThetaMap[hit.GetCrystalId()],outgoing->GetName())
-			,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_Crys(Theta)%i_%s",crysThetaMap[hit.GetCrystalId()]
-			,outgoing->GetName())
-			,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
-
-      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)_Crys(Theta)%i_%s",crysThetaMap[hit.GetCrystalId()]
-			,outgoing->GetName())
-			,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
-      
-      
+      //Crystal Theta Level Correlations
       //Azita Correlations
-      dirname=Form("AzitaCrysThetaLevelCorrs_%s_%s",incoming->GetName(),time_energy->GetName());
+      dirname="AzitaCrysThetaLevelCorrs";
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
 
       obj.FillHistogram(dirname,Form("Gamma(Beta)_v_Azita_Crys(Theta)%i_%s",crysThetaMap[hit.GetCrystalId()],outgoing->GetName())
 			                                                   ,1000,0,4000,hit.GetDoppler(GValue::Value("BETA"))
 			                                                   ,400,-6.3,6.3,s800->Azita());
 			                                                       
-
       obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_Azita_Crys(Theta)%i_%s",crysThetaMap[hit.GetCrystalId()]
 		        ,outgoing->GetName())
 			,1000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track)
 			,400,-6.3,6.3,s800->Azita());
       
       //Plane Angle (phi) Correlations
-      dirname=Form("PhiCrysThetaLevelCorrs_%s_%s",incoming->GetName(),time_energy->GetName());
+      dirname="PhiCrysThetaLevelCorrs";
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
 
       obj.FillHistogram(dirname,Form("Gamma(Beta)_v_Phi1_Crys(Theta)%i_%s",crysThetaMap[hit.GetCrystalId()],outgoing->GetName())
 			                                                  ,1000,0,4000,hit.GetDoppler(GValue::Value("BETA"))
@@ -1083,7 +1350,11 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800
 			,400,-6.3,6.3,phi1);
       
       //YTA Correlations
-      dirname=Form("YTACrysThetaLevelCorrs_%s_%s",incoming->GetName(),time_energy->GetName());
+      dirname="YTACrysThetaLevelCorrs";
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
 
       obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_YTA_Crys(Theta)%i_%s",crysThetaMap[hit.GetCrystalId()]
 			,outgoing->GetName())
@@ -1096,7 +1367,11 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800
 			,1000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
       
       //DTA Correlations
-      dirname=Form("DTACrysThetaLevelCorrs_%s_%s",incoming->GetName(),time_energy->GetName());
+      dirname="DTACrysThetaLevelCorrs";
+      if(incoming)
+        {dirname+=Form("_%s",incoming->GetName());}
+      if(time_energy)
+        {dirname+=Form("_%s",time_energy->GetName());}
 
       obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_v_DTA_Crys(Theta)%i_%s",crysThetaMap[hit.GetCrystalId()]
 		        ,outgoing->GetName())
@@ -1107,7 +1382,7 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj,TGretinaHit hit,TS800* s800
 			,outgoing->GetName()),500,-0.5,0.5,s800->GetDta()
 			,1000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
 
-    }//end if(hit.CoreEnergy > 100) 
+  } //end if(hit.GetCoreEnergy > 100)
 
   return true;
 
@@ -1121,12 +1396,9 @@ bool HandleGretina_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing, 
   if(!gretina || !s800 || !bank29)
     {return false;}
 
-  std::string dirname = "Gretina";
-
   ///////////////////////////////////////////////////
   //incoming gates on Xfp-E1 vs. OBJ-E1 Uncorrected//
   ///////////////////////////////////////////////////
-  
   if(incoming) {
     bool passed = false;  
     if(incoming->IsInside(s800->GetMTof().GetCorrelatedObjE1(),s800->GetMTof().GetCorrelatedXfpE1())) {  
@@ -1134,7 +1406,7 @@ bool HandleGretina_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing, 
         }
     if(!passed)
       return false;
-  }
+  } //end incoming gate
 
   ///////////////////////////////////////////////////////
   //incoming gates on Xfp - E1 vs. OBJ - E1 (Corrected)//
@@ -1153,7 +1425,6 @@ bool HandleGretina_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing, 
   ///////////////////////////////////////////////////////////////////
   //OUTGOING GATES on Ion Chamber Charge vs Object - E1 (Corrected)//
   ///////////////////////////////////////////////////////////////////
-  
   if(!outgoing)
     {return false;}
   
@@ -1162,24 +1433,34 @@ bool HandleGretina_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing, 
 
   if(!time_energy) {
    for(unsigned int i=0;i<gretina->Size();i++) {
-
     TGretinaHit hit = gretina->GetGretinaHit(i);
-    Gretina_PIDOUTGatedSpectra(obj,hit,s800,bank29,dirname,incoming,outgoing);
+    Gretina_PIDOUTGatedSpectra(obj,hit,s800,bank29,gretina->Size(),false,incoming,outgoing,time_energy);
+    //GammaCorrelations(obj,hit,s800,incoming,outgoing,time_energy);
 
-   }
-   /*
+    for(unsigned int j=0;j<gretina->Size();j++){
+      if(i==j) continue; //want different hits
+      TGretinaHit hit2 = gretina->GetGretinaHit(j);
+      GammaGamma(obj,hit,hit2,s800,gretina->Size(),false,incoming,outgoing,time_energy);
+    } //end second gretina hit loop 
+   } //end first gretina hit loop
+   
+   
    for(int i=0;i<gretina->AddbackSize();i++) {
-
     TGretinaHit hit = gretina->GetAddbackHit(i);
-    Gretina_PIDOUTGatedSpectra(obj,hit,s800,bank29,"GretinaAddback",incoming,outgoing);
+    Gretina_PIDOUTGatedSpectra(obj,hit,s800,bank29,gretina->AddbackSize(),true,incoming,outgoing,time_energy);
+    //GammaCorrelations(obj,hit,s800,incoming,outgoing,time_energy);
 
-   }*/
-  }
+    for(unsigned int j=0;j<gretina->AddbackSize();j++){
+      if(i==j) continue; //want different hits
+      TGretinaHit hit2 = gretina->GetAddbackHit(j);
+      GammaGamma(obj,hit,hit2,s800,gretina->Size(),true,incoming,outgoing,time_energy);
+    } //end second gretina addback hit loop
+   } //end first gretina addback hit loop 
+  } //end if(!time_energy)
 
   //////////////////////////////////////////////////////////////////////////
   //Time-Energy Gate on Gamma Enery vs Banke29 TimeStamp - GretinaHit Time//
   //////////////////////////////////////////////////////////////////////////
-  
   if(time_energy) {
    for(unsigned int i=0;i<gretina->Size();i++) {
      
@@ -1188,35 +1469,50 @@ bool HandleGretina_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing, 
     if(!time_energy->IsInside(bank29->Timestamp() - hit.GetTime(),hit.GetDoppler(GValue::Value("BETA"),&track)))
       {return false;}
     
-    Gretina_PIDOUTGatedSpectra(obj,hit,s800,bank29,dirname,incoming,outgoing,time_energy);  
-    
-   }
+    Gretina_PIDOUTGatedSpectra(obj,hit,s800,bank29,gretina->Size(),false,incoming,outgoing,time_energy);  
+    //GammaCorrelations(obj,hit,s800,incoming,outgoing,time_energy);
 
-   /*
+    for(unsigned int j=0;j<gretina->Size();j++){
+      if(i==j) continue; //want different hits
+      TGretinaHit hit2 = gretina->GetGretinaHit(j);
+      
+      if(!time_energy->IsInside(bank29->Timestamp() - hit2.GetTime(),hit2.GetDoppler(GValue::Value("BETA"),&track)))
+        {return false;}
+      
+      GammaGamma(obj,hit,hit2,s800,gretina->Size(),false,incoming,outgoing,time_energy);
+    } //end second gretina hit loop
+   } //end first gretina hit loop 
+
+   
    for(int i=0;i<gretina->AddbackSize();i++) {
      
     TGretinaHit hit = gretina->GetAddbackHit(i);
     TVector3 track = s800->Track();
     if(!time_energy->IsInside(bank29->Timestamp() - hit.GetTime(),hit.GetDoppler(GValue::Value("BETA"),&track)))
       {return false;}
+    Gretina_PIDOUTGatedSpectra(obj,hit,s800,bank29,gretina->AddbackSize(),true,incoming,outgoing,time_energy);  
+    //GammaCorrelations(obj,hit,s800,incoming,outgoing,time_energy);
 
-      Gretina_PIDOUTGatedSpectra(obj,hit,s800,bank29,"GretinaAddback",incoming,outgoing,time_energy);  
-    
-   }*/
-  }
-   
+    for(unsigned int j=0;j<gretina->AddbackSize();j++){
+      if(i==j) continue; //want different hits
+      TGretinaHit hit2 = gretina->GetAddbackHit(j);
+      
+      if(!time_energy->IsInside(bank29->Timestamp() - hit2.GetTime(),hit2.GetDoppler(GValue::Value("BETA"),&track)))
+        {return false;}
+      
+      GammaGamma(obj,hit,hit2,s800,gretina->Size(),true,incoming,outgoing,time_energy);
+
+    } //end second gretina addback hit loop
+   } //end first gretina addback hit loop
+  } //end if(time_energy)
   return true;
-
 }
 
 extern "C"
 void MakeHistograms(TRuntimeObjects& obj) {
-  //TGretina *gretina = obj.GetDetector<TGretina>();
-  //TBank29  *bank29  = obj.GetDetector<TBank29>();
-  //TS800    *s800    = obj.GetDetector<TS800>();
 
-  TList    *list    = &(obj.GetObjects());
-  int numobj = list->GetSize();  
+  TList *list    = &(obj.GetObjects());
+  int numobj     = list->GetSize();  
    
   TList *gates = &(obj.GetGates());
 
@@ -1238,40 +1534,26 @@ void MakeHistograms(TRuntimeObjects& obj) {
       gates_loaded++;
     }
   }
-
   
-  for(size_t i=0;i<incoming_cuts.size();i++) {
-   for(size_t j=0;j<outgoing_cuts.size();j++) {
-     HandleTiming(obj,incoming_cuts.at(i),outgoing_cuts.at(j));
-   }
-  }
-  
-  //HandleS800(obj);
-  /*
-  for(size_t i=0;i<incoming_cuts.size();i++) {
-    for(size_t j=0;j<outgoing_cuts.size();j++) {
-      s800Singles(obj,incoming_cuts.at(i),outgoing_cuts.at(j));
-    }
-  }
-  */  
-  
-  for(size_t i=0;i<incoming_cuts.size();i++) {
-   for(size_t j=0;j<outgoing_cuts.size();j++) {
-     HandleS800_Gated(obj,incoming_cuts.at(i),outgoing_cuts.at(j));
-   }
-  }
-  
+  //HandleS800(obj); 
   HandleGretina(obj);
   
   for(size_t i=0;i<incoming_cuts.size();i++) {
    for(size_t j=0;j<outgoing_cuts.size();j++) {
-    for(size_t k=0;k<time_energy_cuts.size();k++) {
-     HandleGretina_Gated(obj,incoming_cuts.at(i),outgoing_cuts.at(j),time_energy_cuts.at(k));
-    }
-   }
-  }
-   
+     
+     HandleTiming_Gated(obj,incoming_cuts.at(i),outgoing_cuts.at(j));
+     HandleS800_Gated(obj,incoming_cuts.at(i),outgoing_cuts.at(j));
+     //HandleS800Singles_Gated(obj,incoming_cuts.at(i),outgoing_cuts.at(j));
+     
+     for(size_t k=0;k<time_energy_cuts.size();k++) {
+       HandleGretina_Gated(obj,incoming_cuts.at(i),outgoing_cuts.at(j),time_energy_cuts.at(k));
+       //HandleS800andGretina_Gated(obj,incoming_cuts.at(i),outgoing_cuts.at(j),time_energy_cuts.at(k));
+       
+    } //end time_energy gate loop 
+   } //end outgoing gate loop
+  } //end incoming gate loop
 
+  
 //      obj.FillHistogram(dirname,histname,
 //          600,-600,600,bank29->Timestamp()-hit.GetTime(),
 //          2000,0,4000,hit.GetCoreEnergy());
