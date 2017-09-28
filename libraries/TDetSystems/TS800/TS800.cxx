@@ -57,7 +57,7 @@ Float_t TS800::GetAta(int i) const {
   //float Shift_ata = 0;
   float ata = TInverseMap::Get()->Ata(i,this);
   if(!std::isnan(GValue::Value("ATA_SHIFT"))) {
-    ata += GValue::Value("ATA_SHIFT")*TMath::DegToRad();
+    ata += GValue::Value("ATA_SHIFT");
   }
   return ata;
 
@@ -66,7 +66,7 @@ Float_t TS800::GetAta(int i) const {
 Float_t TS800::GetBta(int i) const {
   float bta = TInverseMap::Get()->Bta(i,this);
   if(!std::isnan(GValue::Value("BTA_SHIFT"))) {
-    bta += GValue::Value("BTA_SHIFT") *TMath::DegToRad();
+    bta += GValue::Value("BTA_SHIFT");
   }
   return bta;
 }
@@ -498,6 +498,10 @@ bool TS800::HandleCRDCPacket(unsigned short *data,int size) {
   //   the same sample/channel on multiple connectors.
   // Therefore, in this case, we should use the same word1 (top bit set)
   //   with all the word2 (top bit unset) instances that follow.
+
+  int counter = 0;
+  int sample_width = 1;
+  int old_sample_number = 0;
   unsigned short word1 = 0;
   while(x<subsize){
     unsigned short current_word = *(data+x); x++;
@@ -512,6 +516,17 @@ bool TS800::HandleCRDCPacket(unsigned short *data,int size) {
       int connector_number = (word2&(0x0c00)) >> 10;
       int databits         = (word2&(0x03ff));
       int real_channel = (connector_number << 6) + channel_number;
+
+      if(((sample_number-old_sample_number != 0) && (sample_number-old_sample_number != 1)) && counter>0){
+        continue;
+      }
+
+      if((sample_number != old_sample_number) && counter>0){
+        sample_width++;
+      }
+
+      counter++;
+      old_sample_number = sample_number;
 
       /*std::cout << " sample Number    : " << std::dec << sample_number << std::endl;
         std::cout << " channel Number   : " << std::dec << channel_number << std::endl;
@@ -553,6 +568,8 @@ bool TS800::HandleCRDCPacket(unsigned short *data,int size) {
   std::cout << " CRDC Time : " << current_crdc->GetTime() << std::endl;
   std::cout << " CRDC Anod : " << current_crdc->GetAnode() << std::endl;
   std::dec;*/
+
+  current_crdc->SetSampleWidth(sample_width);
   return true;
 }
 

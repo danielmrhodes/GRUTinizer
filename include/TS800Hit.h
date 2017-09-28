@@ -129,6 +129,7 @@ class TCrdc : public TDetectorHit {
     short GetAnode() { return anode; }
     short GetTime()  { return time;  }
     float GetTimeRand()  { return ((float)(time)+gRandom->Uniform());  }
+    int GetSampleWidth() { return sample_width; } 
 
     int  Size()        const { return channel.size(); }
     int  GetNSamples() const { return sample.size(); }
@@ -136,6 +137,7 @@ class TCrdc : public TDetectorHit {
     void SetId(short id)    { fId = id;  }
     void SetAnode(short an) {anode = an; }
     void SetTime(short ti)  {time = ti;  }
+    void SetSampleWidth(int wi) { sample_width = wi; } 
 
 
     int  Address(int i) const { return TDetectorHit::Address() + channel.at(i); }
@@ -175,6 +177,7 @@ class TCrdc : public TDetectorHit {
 
     unsigned short anode;
     unsigned short time;
+    int sample_width;
 
     mutable bool has_cached_dispersive_x; //!
     mutable double cached_dispersive_x; //!
@@ -229,10 +232,10 @@ class TIonChamber : public TDetectorHit {
     int GetChannel(int i) const { if(i>=Size()) return -1; return fChan.at(i); }
     int GetData(int i)    const { if(i>=Size()) return -1; return fData.at(i); }
     int Size() const { return fChan.size(); }
-    float GetdE();
+    float GetdE(TCrdc *);
+    float GetdE(double crdc_1_x, double crdc_1_y);
     float GetSum() const;
     float GetAve();
-    float GetdECorr(TCrdc*);
 
     int  Address(int i) const { return TDetectorHit::Address() + GetChannel(i); }
 
@@ -382,15 +385,13 @@ class TMTof : public TDetectorHit {
     int HodoSize()       const { return fHodoscope.size(); }
     int RefSize()        const { return fRef.size(); }
 
-
-    //bool Correlate()     const;
-    //bool CorrelateE1Up() const;
-    //bool CorrelateObj()  const;
-    //bool CorrelateXfp()  const;
-    
-    double  GetCorrelatedXfp()  const; //{ return fCorrelatedXFP; }  //!
-    double  GetCorrelatedObj()  const; //{ return fCorrelatedOBJ; }  //!
-    double  GetCorrelatedE1Up() const; //{ return fCorrelatedE1Up;  }  //!
+    //Determines correlated time-of-flights for multi-hit TDC's based on
+    //TARGET_MTOF_# GValues. Values are set in TMTof as fCorrelatedXfp,
+    //fCorrelatedXfp, etc.  Note that if the GValues are not set, the first
+    //value in each time-of-flight is taken.
+   double  GetCorrelatedXfp()  const; 
+    double  GetCorrelatedObj()  const;
+    double  GetCorrelatedE1Up() const;
 
     double  GetCorrelatedXfpE1()  const { return GetCorrelatedXfp()-GetCorrelatedE1Up(); }  //!
     double  GetCorrelatedObjE1()  const { return GetCorrelatedObj()-GetCorrelatedE1Up(); }  //!

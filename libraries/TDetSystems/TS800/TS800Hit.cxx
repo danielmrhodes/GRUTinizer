@@ -192,38 +192,28 @@ float TIonChamber::GetSum() const {
 //  }
 //}
 
-//We already have ICSum, it's our current getdE() unction. We need to somehow get the 
-//track from the crdc into this function, and figure out what IC_corg is.
-
-//TODO: We need to change this function to correct the sum for each event
-//      based on the track through the CRDCs
-
-float TIonChamber::GetdE(){
-  //std::cout << "GetdE() NOT IMPLEMENTED! Just returning GetSum()" << std::endl;
-  return GetSum();
-}
-
-//Calculate energy loss in Ion Chamber corrected
-//for particle track
-float TIonChamber::GetdECorr(TCrdc *crdc){
-  float sum = GetdE();
+float TIonChamber::GetdE(TCrdc *crdc){
+  float sum = GetAve();
   float x   = crdc->GetDispersiveX();
   float y   = crdc->GetNonDispersiveY();
+
+  return GetdE(x,y);
+}
+
+float TIonChamber::GetdE(double crdc_1_x, double crdc_1_y){
+  float sum = GetAve();
 
   float xtilt  = GValue::Value("IC_DE_XTILT");
   float ytilt  = GValue::Value("IC_DE_YTILT");
   float x0tilt = GValue::Value("IC_DE_X0TILT");
 
-  /*  std::cout << "---------------------" << std::endl;
-  std::cout << " xtilt = " << xtilt << std::endl;
-  std::cout << " ytilt = " << ytilt << std::endl;
-  std::cout << " x0tilt = " << x0tilt << std::endl;
-  std::cout << BLUE << " SUM = " << sum << RESET_COLOR << std::endl;
-  */
-  sum += sum * ytilt * y;
-  //  std::cout << GREEN << " SUM2 = " << sum << RESET_COLOR << std::endl;
-  sum *= TMath::Exp(xtilt*(x0tilt-x));
-  //std::cout << RED << " SUM3 = " << sum << RESET_COLOR << std::endl;
+  if (isnan(xtilt) || isnan(ytilt) || isnan(x0tilt)){
+    std::cout << "Define  IC_DE_XTILT, IC_DE_YTILT, and IC_DE_X0TILT before using TIonChamber::GetdE()!\n";
+  }
+  sum += sum * ytilt * crdc_1_y;
+  if (crdc_1_x < x0tilt){
+    sum *= TMath::Exp(xtilt*(x0tilt-crdc_1_x));
+  }
   return sum;
 }
 
@@ -282,6 +272,9 @@ int TCrdc::GetMaxPad() const {
 
     }*/
 
+    if (data.at(i) <= 0){
+      continue;
+    }
     if(!IsGoodSample(i)) {
       continue;
     }
@@ -355,7 +348,7 @@ int TCrdc::GetMaxPadSum() const{
     }
   }
   //return (float)(channel.at(place))+gRandom->Uniform();
-  return maxd; 
+  return maxd/sample_width; 
 }
 
 void TCrdc::DrawChannels(Option_t *opt,bool calibrate) const {
@@ -471,6 +464,7 @@ void TCrdc::Clear(Option_t *opt) {
   fId   = -1;
   anode = 0;
   time  = 0;
+  sample_width = 0;
   channel.clear();
   sample.clear();
   data.clear();
