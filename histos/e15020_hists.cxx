@@ -44,59 +44,9 @@ std::map<int,int> crysThetaMap = {{26,1}, {30,1}, {34,1}, {38,1}, {25,2}, {29,2}
 				  {24,4}, {28,4}, {32,4}, {36,4}, {63,5}, {71,5}, {79,5}, {59,6}, {67,6}, {58,7}, {66,7}, {60,8},
 				  {68,8}, {76,8}, {62,9}, {70,9}, {78,9}, {56,10},{64,10},{57,11},{65,11},{61,12},{69,12},
 				  {77,12}};
-/*
-detMap[26]=1;
-detMap[30]=2;
-detMap[34]=3;
-detMap[38]=4;
-
-detMap[25]=5;
-detMap[29]=6;
-detMap[33]=7;
-detMap[37]=8;
-
-detMap[27]=9;
-detMap[31]=10;
-detMap[35]=11;
-detMap[39]=12;
-
-detMap[24]=13;
-detMap[28]=14;
-detMap[32]=15;
-detMap[36]=16;
-
-detMap[63]=17;
-detMap[71]=18;
-detMap[79]=19;
-
-detMap[59]=20;
-detMap[67]=21;
-
-detMap[58]=22;
-detMap[66]=23;
-
-detMap[60]=24;
-detMap[68]=25;
-detMap[76]=26;
-
-detMap[62]=27;
-detMap[70]=28;
-detMap[78]=29;
-
-detMap[56]=30;
-detMap[64]=31;
-
-detMap[57]=32;
-detMap[65]=33;
-
-detMap[61]=34;
-detMap[69]=35;
-detMap[77]=36;
-*/
 
 bool HandleTiming_Gated(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) {
   TS800 *s800  = obj.GetDetector<TS800>();
-  //TBank29 *bank29  = obj.GetDetector<TBank29>();
   
   if(!s800)
     {return false;}
@@ -119,6 +69,8 @@ bool HandleTiming_Gated(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) 
     if(!passed)
       return false;
   }
+
+  if(!outgoing) {
 
   obj.FillHistogram(dirname,"E1UpSize",10,0,10,E1UpSize);
 
@@ -143,7 +95,13 @@ bool HandleTiming_Gated(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) 
 		                     ,s800->GetMTof().GetCorrelatedObj() - s800->GetMTof().GetCorrelatedXfp());
 
   obj.FillHistogram(dirname,"Xfp-Obj",2000,4000,6000
-		                     ,s800->GetMTof().GetCorrelatedXfp() - s800->GetMTof().GetCorrelatedObj());  
+		                     ,s800->GetMTof().GetCorrelatedXfp() - s800->GetMTof().GetCorrelatedObj());
+
+  obj.FillHistogram(dirname,"E1_raw",4000,0,64000,s800->GetMTof().fE1Up);
+
+  obj.FillHistogram(dirname,"Xfp_raw",4000,0,64000,s800->GetMTof().fXfp);
+ 
+  obj.FillHistogram(dirname,"Obj_raw",4000,0,64000,s800->GetMTof().fObj);
 
   if(s800->GetReg() == 2) {
    obj.FillHistogram(dirname,"E1_Coin_raw",4000,0,64000,s800->GetMTof().fE1Up);
@@ -161,11 +119,6 @@ bool HandleTiming_Gated(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) 
    obj.FillHistogram(dirname,"Obj_Sing_raw",4000,0,64000,s800->GetMTof().fObj);
   }
      
-  obj.FillHistogram(dirname,"E1_raw",4000,0,64000,s800->GetMTof().fE1Up);
-
-  obj.FillHistogram(dirname,"Xfp_raw",4000,0,64000,s800->GetMTof().fXfp);
- 
-  obj.FillHistogram(dirname,"Obj_raw",4000,0,64000,s800->GetMTof().fObj);
   
   for(int i=0; i<E1UpSize; i++) {
    for(int j=0; j<XfpSize;j++) {  
@@ -179,6 +132,18 @@ bool HandleTiming_Gated(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) 
    }
   }
 
+  unsigned int reg = s800->GetReg();
+  unsigned int Sing = reg&1;
+  unsigned int Coin = reg&2;
+
+  if(Sing!=0) 
+    {obj.FillHistogram(dirname,"TrigBit",10,0,10,Sing);}
+
+  if(Coin!=0) 
+    {obj.FillHistogram(dirname,"TrigBit",10,0,10,Coin);}
+
+  } //end if(!outgoing)
+
   if(!outgoing)
     {return false;}
   if(!outgoing->IsInside(s800->GetMTofObjE1(),s800->GetIonChamber().Charge()))
@@ -188,8 +153,19 @@ bool HandleTiming_Gated(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) 
 		    ,s800->GetMTof().GetCorrelatedObj() - s800->GetMTof().GetCorrelatedXfp());
 
   obj.FillHistogram(dirname,Form("Xfp-Obj_%s",outgoing->GetName()),2000,4000,6000
-		    ,s800->GetMTof().GetCorrelatedXfp() - s800->GetMTof().GetCorrelatedObj()); 
-            
+		    ,s800->GetMTof().GetCorrelatedXfp() - s800->GetMTof().GetCorrelatedObj());
+
+  obj.FillHistogram(dirname,Form("Register_%s",outgoing->GetName()),10,0,10,s800->GetReg());
+
+  unsigned int reg = s800->GetReg();
+  unsigned int Sing = reg&1;
+  unsigned int Coin = reg&2;
+
+  if(Sing!=0) 
+    {obj.FillHistogram(dirname,Form("TrigBit_%s",outgoing->GetName()),10,0,10,Sing);}
+
+  if(Coin!=0) 
+    {obj.FillHistogram(dirname,Form("TrigBit_%s",outgoing->GetName()),10,0,10,Coin);}        
   return true;
 }
 
@@ -237,6 +213,8 @@ bool HandleS800Singles_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoi
       return false;
   }*/
 
+  if(!outgoing) {
+
   //s800 Singles Only
   dirname = "s800Singles";
   if(incoming)
@@ -277,6 +255,8 @@ bool HandleS800Singles_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoi
 
    obj.FillHistogram(dirname,"Xfp-E1_v_Obj-E1_Uncorrected",800,-1500,-700,s800->GetMTof().GetCorrelatedObjE1()
 		                                          ,1400,3000,4400,s800->GetMTof().GetCorrelatedXfpE1());
+
+  } //end if(!outgoing)
 
    if(!outgoing)
     {return false;}
@@ -364,7 +344,64 @@ bool HandleS800_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
     if(!passed)
       return false;
   }*/
-                                 
+
+  if((!outgoing) && (!incoming)) {
+    
+    //Gates on Ion Chamber Charge
+    if(s800->GetIonChamber().Charge() > 24400 && s800->GetIonChamber().Charge() < 26440) { //reacted gate
+      //if(s800->GetIonChamber().Charge() > 26100 && s800->GetIonChamber().Charge() < 28100) { //unreacted  gate
+
+      dirname = "WithICGate";
+
+      obj.FillHistogram(dirname,"Register",10,0,10,s800->GetReg());
+      
+      obj.FillHistogram(dirname,"IC_Charge",1600,20000,35000,s800->GetIonChamber().Charge());
+
+      if(s800->GetMTof().ObjSize() > 0 && s800->GetMTof().XfpSize() > 0) {
+	
+	obj.FillHistogram(dirname,"AFP_v_Obj-Xfp_first"
+			  ,600,-5100,-4500,s800->GetMTof().fObj.at(0) - s800->GetMTof().fXfp.at(0)
+			  ,500,-0.05,0.05,s800->GetAFP());
+	} // end if(sizes > 0)
+
+      obj.FillHistogram(dirname,"AFP_v_Obj-Xfp_Uncorrected"
+			,600,-5100,-4500,s800->GetMTof().GetCorrelatedObj() - s800->GetMTof().GetCorrelatedXfp()
+		        ,500,-0.05,0.05,s800->GetAFP());
+      
+
+      obj.FillHistogram(dirname,"AFP_v_Obj-Xfp",600,-5100,-4500,s800->GetMTofObjE1() - s800->GetMTofXfpE1()
+			                       ,500,-0.05,0.05,s800->GetAFP());
+
+      obj.FillHistogram(dirname,"AFP",1000,-0.1,0.1,s800->GetAFP());
+
+      obj.FillHistogram(dirname,"Xfp-E1_Uncorrected",4000,-10000,10000,s800->GetMTof().GetCorrelatedXfpE1());
+
+      obj.FillHistogram(dirname,"Obj-E1_Uncorrected",4000,-10000,10000,s800->GetMTof().GetCorrelatedObjE1());
+
+      obj.FillHistogram(dirname,"Xfp-E1",4000,-10000,10000,s800->GetMTofXfpE1());
+
+      obj.FillHistogram(dirname,"Obj-E1",4000,-10000,10000,s800->GetMTofObjE1());
+  
+      obj.FillHistogram(dirname, "CRDC1X", 1200, -300, 300, s800->GetCrdc(0).GetDispersiveX());
+
+      obj.FillHistogram(dirname, "CRDC1Y", 800, -200, 200, s800->GetCrdc(0).GetNonDispersiveY());
+
+      obj.FillHistogram(dirname, "CRDC2X", 1200, -300, 300, s800->GetCrdc(1).GetDispersiveX());
+
+      obj.FillHistogram(dirname, "CRDC2Y", 800, -200, 200, s800->GetCrdc(1).GetNonDispersiveY());
+
+      obj.FillHistogram(dirname,"Charge_v_Obj-E1",1400,-1500,-800,s800->GetMTofObjE1()
+                                                 ,1600,20000,35000,s800->GetIonChamber().Charge());
+
+      obj.FillHistogram(dirname,"Charge_v_Obj-E1_Uncorrected",1400,-1500,-800,s800->GetMTof().GetCorrelatedObjE1()
+                                                             ,1600,20000,35000,s800->GetIonChamber().Charge());
+  
+    } //end gate on Ion Chamber Charge
+
+  } //end if((!outgoing) && (!incoming))
+  
+  if(!outgoing) {
+  
   //Incoming PID Plots
   dirname = "IncPID";
   if(incoming)
@@ -405,13 +442,31 @@ bool HandleS800_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
   if(incoming)
     {dirname=Form("OutPID_%s",incoming->GetName());}
   
-  obj.FillHistogram(dirname,"Ion_v_Obj-E1",1400,-1500,-800,s800->GetMTofObjE1()
-                                          ,1600,20000,35000,s800->GetIonChamber().Charge());
+  obj.FillHistogram(dirname,"Charge_v_Obj-E1",1400,-1500,-800,s800->GetMTofObjE1()
+                                             ,1600,20000,35000,s800->GetIonChamber().Charge());
 
-  obj.FillHistogram(dirname,"Ion_v_Obj-E1_Uncorrected",700,-1500,-800,s800->GetMTof().GetCorrelatedObjE1()
-                                                      ,1600,20000,35000,s800->GetIonChamber().Charge());
+  obj.FillHistogram(dirname,"Charge_v_Obj-E1_Uncorrected",700,-1500,-800,s800->GetMTof().GetCorrelatedObjE1()
+                                                         ,1600,20000,35000,s800->GetIonChamber().Charge());
 
-  obj.FillHistogram(dirname,"IonChamber",1600,20000,35000,s800->GetIonChamber().Charge());
+  obj.FillHistogram(dirname,"ICAve_v_Obj-E1",1200,-1300,-700,s800->GetMTofObjE1()
+		                            ,800,0,2400,s800->GetIonChamber().GetAve());
+
+  obj.FillHistogram(dirname,"ICdE_v_Obj-E1",1200,-1300,-700,s800->GetMTofObjE1(),800,0,2400
+		    ,s800->GetIonChamber().GetdE(s800->GetCrdc(0).GetDispersiveX(),s800->GetCrdc(0).GetNonDispersiveY()));
+  
+  //1D IonChamber
+  dirname = "IonChamber";
+  if(incoming)
+    {dirname=Form("IonChamber_%s",incoming->GetName());}  
+
+  obj.FillHistogram(dirname,"IC_Charge",1600,20000,35000,s800->GetIonChamber().Charge());
+
+  obj.FillHistogram(dirname,"IC_Sum",2500,0,70000,s800->GetIonSum());
+
+  obj.FillHistogram(dirname,"IC_Ave",1000,0,6000,s800->GetIonChamber().GetAve());
+
+  obj.FillHistogram(dirname,"IC_dE",1000,0,6000,
+		    s800->GetIonChamber().GetdE(s800->GetCrdc(0).GetDispersiveX(),s800->GetCrdc(0).GetNonDispersiveY()));
 
   
   //CRDC Positions
@@ -501,6 +556,35 @@ bool HandleS800_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
   obj.FillHistogram(dirname,"AFP_v_Xfp-E1_Uncorrected",700,3000,4400,s800->GetMTof().GetCorrelatedXfpE1()
                                                       ,500,-0.05,0.05,s800->GetAFP());
 
+  obj.FillHistogram(dirname,"AFP_v_Obj-Xfp_Uncorrected",600,-5100,-4500
+		    ,s800->GetMTof().GetCorrelatedObj() - s800->GetMTof().GetCorrelatedXfp()
+		    ,500,-0.05,0.05,s800->GetAFP());
+
+  obj.FillHistogram(dirname,"AFP_v_Obj-Xfp",600,-5100,-4500
+		    ,s800->GetMTofObjE1() - s800->GetMTofXfpE1()
+		    ,500,-0.05,0.05,s800->GetAFP());
+
+  //ToF vs EvtNum
+  dirname = "ToFvEvtNum";
+  if(incoming)
+    {dirname=Form("ToFvEvtNum_%s",incoming->GetName());}
+
+  obj.FillHistogram(dirname,"Obj-E1_v_EvtNum_Uncorrected",1000,0,5000000,s800->GetEventCounter()
+		                                         ,240,-1200,-960,s800->GetMTof().GetCorrelatedObjE1());
+
+  obj.FillHistogram(dirname,"Xfp-E1_v_EvtNum_Uncorrected",1000,0,5000000,s800->GetEventCounter()
+		                                         ,350,3500,3850,s800->GetMTof().GetCorrelatedXfpE1());
+
+  obj.FillHistogram(dirname,"Obj-E1_v_EvtNum",1000,0,5000000,s800->GetEventCounter()
+		                             ,240,-1200,-960,s800->GetMTofObjE1());
+
+  obj.FillHistogram(dirname,"Xfp-E1_v_EvtNum",1000,0,5000000,s800->GetEventCounter()
+		                             ,350,3500,3850,s800->GetMTofXfpE1());
+
+  obj.FillHistogram(dirname,"EvtNum",5000,0,5000000,s800->GetEventCounter());
+
+  } //end if(!outgoing)
+
   
   ///////////////////////////////////////////////////////////////////
   //OUTGOING GATES on Ion Chamber Charge vs Object - E1 (Corrected)//
@@ -510,23 +594,49 @@ bool HandleS800_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
     {return false;}
   if(!outgoing->IsInside(s800->GetMTofObjE1(),s800->GetIonChamber().Charge()))
     {return false;}
+  /*
+  std::string name = outgoing->GetName();
+  
+  //Other Isotope Plots
+  if(name.compare("69Cu")) {
+    dirname = "OutPID";
+    if(incoming)
+      {dirname=Form("OutPID_%s",incoming->GetName());}
+  
+      obj.FillHistogram(dirname,Form("Charge_v_Obj-E1_%s",outgoing->GetName()),1400,-1500,-800,s800->GetMTofObjE1()
+                                                                              ,1600,20000,35000,s800->GetIonChamber().Charge());
 
+      obj.FillHistogram(dirname,Form("Charge_v_Obj-E1_Uncorrected_%s",outgoing->GetName())
+		                                                     ,700,-1500,-800,s800->GetMTof().GetCorrelatedObjE1()
+                                                                     ,1600,20000,35000,s800->GetIonChamber().Charge());
+
+      dirname = "IonChamber";
+      if(incoming)
+        {dirname=Form("IonChamber_%s",incoming->GetName());}
+      obj.FillHistogram(dirname,Form("IC_Charge_%s",outgoing->GetName()),1600,20000,35000,s800->GetIonChamber().Charge());
+
+    } //end if(name.compare(69Cu))
+  
+  if(name.compare("69Cu"))
+    {return false;}
+  */
+  
   //ToF vs EvtNum
   dirname = "ToFvEvtNum";
   if(incoming)
     {dirname=Form("ToFvEvtNum_%s",incoming->GetName());}
 
-  obj.FillHistogram(dirname,Form("Obj-E1_v_EvtNum_Uncorrected_%s",outgoing->GetName()),5000,0,5000000,s800->GetEventCounter()
-		                                                 ,2000,-4000,2000,s800->GetMTof().GetCorrelatedObjE1());
+  obj.FillHistogram(dirname,Form("Obj-E1_v_EvtNum_Uncorrected_%s",outgoing->GetName()),1000,0,5000000,s800->GetEventCounter()
+		                                                 ,240,-1200,-960,s800->GetMTof().GetCorrelatedObjE1());
 
-  obj.FillHistogram(dirname,Form("Xfp-E1_v_EvtNum_Uncorrected_%s",outgoing->GetName()),5000,0,5000000,s800->GetEventCounter()
-		                                                 ,2000,1000,7000,s800->GetMTof().GetCorrelatedXfpE1());
+  obj.FillHistogram(dirname,Form("Xfp-E1_v_EvtNum_Uncorrected_%s",outgoing->GetName()),1000,0,5000000,s800->GetEventCounter()
+		                                                 ,350,3500,38500,s800->GetMTof().GetCorrelatedXfpE1());
 
-  obj.FillHistogram(dirname,Form("Obj-E1_v_EvtNum_%s",outgoing->GetName()),5000,0,5000000,s800->GetEventCounter()
-		                                                          ,2000,-4000,2000,s800->GetMTofObjE1());
+  obj.FillHistogram(dirname,Form("Obj-E1_v_EvtNum_%s",outgoing->GetName()),1000,0,5000000,s800->GetEventCounter()
+		                                                          ,240,-1200,-960,s800->GetMTofObjE1());
 
-  obj.FillHistogram(dirname,Form("Xfp-E1_v_EvtNum_%s",outgoing->GetName()),5000,0,5000000,s800->GetEventCounter()
-		                                                          ,2000,1000,7000,s800->GetMTofXfpE1());
+  obj.FillHistogram(dirname,Form("Xfp-E1_v_EvtNum_%s",outgoing->GetName()),1000,0,5000000,s800->GetEventCounter()
+		                                                          ,350,3500,3850,s800->GetMTofXfpE1());
 
   obj.FillHistogram(dirname,Form("EvtNum_%s",outgoing->GetName()),5000,0,5000000,s800->GetEventCounter());
     
@@ -569,14 +679,32 @@ bool HandleS800_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
  if(incoming)
    {dirname=Form("OutPID_%s",incoming->GetName());}
   
- obj.FillHistogram(dirname,Form("Ion_v_Obj-E1_%s",outgoing->GetName()),1400,-1500,-800,s800->GetMTofObjE1()
-                                                                      ,1600,20000,35000,s800->GetIonChamber().Charge());
+ obj.FillHistogram(dirname,Form("Charge_v_Obj-E1_%s",outgoing->GetName()),1400,-1500,-800,s800->GetMTofObjE1()
+                                                                         ,1600,20000,35000,s800->GetIonChamber().Charge());
 
- obj.FillHistogram(dirname,Form("Ion_v_Obj-E1_Uncorrected_%s",outgoing->GetName())
-		                                             ,700,-1500,-800,s800->GetMTof().GetCorrelatedObjE1()
-                                                             ,1600,20000,35000,s800->GetIonChamber().Charge());
+ obj.FillHistogram(dirname,Form("Charge_v_Obj-E1_Uncorrected_%s",outgoing->GetName())
+		                                                ,700,-1500,-800,s800->GetMTof().GetCorrelatedObjE1()
+                                                                ,1600,20000,35000,s800->GetIonChamber().Charge());
 
- obj.FillHistogram(dirname,Form("IonChamber_%s",outgoing->GetName()),1600,20000,35000,s800->GetIonChamber().Charge());
+ obj.FillHistogram(dirname,Form("ICAve_v_Obj-E1_%s",outgoing->GetName()),1200,-1300,-700,s800->GetMTofObjE1()
+		                                                        ,800,0,2400,s800->GetIonChamber().GetAve());
+
+ obj.FillHistogram(dirname,Form("ICdE_v_Obj-E1_%s",outgoing->GetName()),1200,-1300,-700,s800->GetMTofObjE1(),800,0,2400,
+		   s800->GetIonChamber().GetdE(s800->GetCrdc(0).GetDispersiveX(),s800->GetCrdc(0).GetNonDispersiveY()));
+ 
+ //1D IonChamber
+ dirname = "IonChamber";
+  if(incoming)
+    {dirname=Form("IonChamber_%s",incoming->GetName());}  
+
+  obj.FillHistogram(dirname,Form("IC_Charge_%s",outgoing->GetName()),1600,20000,35000,s800->GetIonChamber().Charge());
+
+  obj.FillHistogram(dirname,Form("IC_Sum_%s",outgoing->GetName()),2500,0,70000,s800->GetIonSum());
+
+  obj.FillHistogram(dirname,Form("IC_Ave_%s",outgoing->GetName()),1000,0,6000,s800->GetIonChamber().GetAve());
+
+  obj.FillHistogram(dirname,Form("IC_dE_%s",outgoing->GetName()),1000,0,6000,
+		    s800->GetIonChamber().GetdE(s800->GetCrdc(0).GetDispersiveX(),s800->GetCrdc(0).GetNonDispersiveY()));
 
  //CRDC Positions
  dirname = "CRDCPos";
@@ -654,6 +782,14 @@ bool HandleS800_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
  obj.FillHistogram(dirname,Form("AFP_v_Xfp-E1_Uncorrected_%s",outgoing->GetName())
 		                                             ,700,3000,4400,s800->GetMTof().GetCorrelatedXfpE1()
                                                              ,500,-0.05,0.05,s800->GetAFP());
+
+ obj.FillHistogram(dirname,Form("AFP_v_Obj-Xfp_Uncorrected_%s",outgoing->GetName())
+		   ,600,-5100,-4500,s800->GetMTof().GetCorrelatedObj() - s800->GetMTof().GetCorrelatedXfp()
+		   ,500,-0.05,0.05,s800->GetAFP());
+
+ obj.FillHistogram(dirname,Form("AFP_v_Obj-Xfp_%s",outgoing->GetName())
+		                                  ,600,-5100,-4500,s800->GetMTofObjE1() - s800->GetMTofXfpE1()
+		                                  ,500,-0.05,0.05,s800->GetAFP());
   
   return true;
     
@@ -664,6 +800,7 @@ bool HandleGretina(TRuntimeObjects &obj) {
    
   if(!gretina)
     {return false;}
+  
   std::string dirname = "Gretina_Ungated";
   for(unsigned int i=0;i<gretina->Size();i++) {
       TGretinaHit hit = gretina->GetGretinaHit(i);
@@ -732,8 +869,8 @@ bool HandleGretina(TRuntimeObjects &obj) {
          //TS800 *s800 = obj.GetDetector<TS800>();
          //if(!s800) {return false;}
       
-        } //end if(hit.GetCoreEnergy > 100) 
-    }
+       } //end if(hit.GetCoreEnergy > 100) 
+  } //end loop over hits
 
 
   return true;
@@ -761,7 +898,9 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj, TGretinaHit hit, TS800* s8
 
     obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_v_DTA_%s",outgoing->GetName())
 		      ,1500,-0.5,0.5,s800->GetDta()
-		      ,1000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+		      ,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+    obj.FillHistogram(dirname,Form("DTA_%s",outgoing->GetName()),1500,-0.5,0.5,s800->GetDta());
 
     if(ab)
       {dirname="AB_Gretina";}
@@ -774,7 +913,7 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj, TGretinaHit hit, TS800* s8
 
       //Detector Map
       obj.FillHistogram(dirname,Form("HitTheta_v_DetMap_%s",outgoing->GetName()),100,0,100,crysThetaMap[hit.GetCrystalId()]
-			                                                        ,226,0,3.2,hit.GetTheta());
+       			                                                        ,226,0,3.2,hit.GetTheta());
 
       obj.FillHistogram(dirname,Form("HitPhi_v_DetMap_%s",outgoing->GetName()),100,0,100,crysThetaMap[hit.GetCrystalId()]
 			                                                      ,452,0,6.3,hit.GetPhi());
@@ -783,12 +922,18 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj, TGretinaHit hit, TS800* s8
       obj.FillHistogram(dirname,Form("Gamma_v_Time_%s",outgoing->GetName())
 			                              ,1200,-400,800,bank29->Timestamp() - hit.GetTime()
                                                       ,2000,0,8000,hit.GetDoppler(GValue::Value("BETA"),&track));
-
+    
       obj.FillHistogram(dirname,Form("Gamma_v_TimeStamp_%s",outgoing->GetName())
 		                                           ,600,-400,800,bank29->Timestamp() - hit.Timestamp()
                                                            ,2000,0,8000,hit.GetDoppler(GValue::Value("BETA"),&track));
 
-      
+      //Energy vs Multiplicity
+      obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)_v_MWMult_%s",outgoing->GetName()),100,0,100,size
+		        ,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+      obj.FillHistogram(dirname,Form("MW_Mult_%s",outgoing->GetName()),100,0,100,size);
+
+       
       //Gamma Ray Spectra
       obj.FillHistogram(dirname,Form("Gamma(Beta)_%s",outgoing->GetName()),2000,0,4000,hit.GetDoppler(GValue::Value("BETA")));
 
@@ -801,6 +946,61 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj, TGretinaHit hit, TS800* s8
       obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)_%s",outgoing->GetName())
 			,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
 
+      if(size > 3)
+	{obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)Mult4+_%s",outgoing->GetName())
+			   ,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));}
+
+      for(int x=1; x<4; x++) {
+	if(size == x) {
+
+	if(ab)
+          {dirname="AB_Gretina";}
+        else
+          {dirname="Gretina";}
+        if(incoming)
+          {dirname+=Form("_%s",incoming->GetName());}
+        if(time_energy)
+          {dirname+=Form("_%s",time_energy->GetName());}
+    
+	obj.FillHistogram(dirname,Form("Gamma(Beta)Mult%i_%s",size,outgoing->GetName())
+			  ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA")));
+
+        obj.FillHistogram(dirname,Form("Gamma(Beta&Track)Mult%i_%s",size,outgoing->GetName())
+			  ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
+
+        obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)Mult%i_%s",size,outgoing->GetName())
+			  ,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+        obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)Mult%i_%s",size,outgoing->GetName())
+			  ,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
+
+	if(ab)
+          {dirname="AB_GretinaAndS800";}
+        else
+	  {dirname="GretinaAndS800";}
+        if(incoming)
+          {dirname+=Form("_%s",incoming->GetName());}
+        if(time_energy)
+          {dirname+=Form("_%s",time_energy->GetName());}
+
+        obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)Mult%i_v_DTA_%s",size,outgoing->GetName())
+		          ,1500,-0.5,0.5,s800->GetDta()
+		          ,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
+
+	obj.FillHistogram(dirname,Form("DTA_Mult%i_%s",size,outgoing->GetName()),1500,-0.5,0.5,s800->GetDta());
+
+	} //end if(size == x)
+      } //end multiplicity loop
+
+      
+      if(ab)
+      {dirname="AB_Gretina";}
+    else
+      {dirname="Gretina";}
+    if(incoming)
+      {dirname+=Form("_%s",incoming->GetName());}
+    if(time_energy)
+      {dirname+=Form("_%s",time_energy->GetName());}
       
       //Quad, Crystal, and Theta-Phi Summaries
       obj.FillHistogram(dirname,Form("Gamma(Beta&Track)_v_CrystalId_%s",outgoing->GetName())
@@ -851,48 +1051,7 @@ bool Gretina_PIDOUTGatedSpectra(TRuntimeObjects &obj, TGretinaHit hit, TS800* s8
       }
       */
 
-      
-      for(int x=1; x<4; x++) {
-	if(size == x) {
-
-	if(ab)
-          {dirname="AB_Gretina";}
-        else
-          {dirname="Gretina";}
-        if(incoming)
-          {dirname+=Form("_%s",incoming->GetName());}
-        if(time_energy)
-          {dirname+=Form("_%s",time_energy->GetName());}
     
-	obj.FillHistogram(dirname,Form("Gamma(Beta)Mult%i_%s",size,outgoing->GetName())
-			  ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA")));
-
-        obj.FillHistogram(dirname,Form("Gamma(Beta&Track)Mult%i_%s",size,outgoing->GetName())
-			  ,2000,0,4000,hit.GetDoppler(GValue::Value("BETA"),&track));
-
-        obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)Mult%i_%s",size,outgoing->GetName())
-			  ,2000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
-
-        obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA&DTA)Mult%i_%s",size,outgoing->GetName())
-			  ,2000,0,4000,hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
-
-	if(ab)
-          {dirname="AB_GretinaAndS800";}
-        else
-	  {dirname="GretinaAndS800";}
-        if(incoming)
-          {dirname+=Form("_%s",incoming->GetName());}
-        if(time_energy)
-          {dirname+=Form("_%s",time_energy->GetName());}
-
-        obj.FillHistogram(dirname,Form("Gamma(Beta&Track&YTA)Mult%i_v_DTA_%s",x,outgoing->GetName())
-		          ,1500,-0.5,0.5,s800->GetDta()
-		          ,1000,0,4000,hit.GetDopplerYta(GValue::Value("BETA"),yta,&track));
-
-	} //end if(size == x)
-      } //end multiplicity loop
-
-      
       //Detector (Crystal) Level
       if(ab)
       {dirname="AB_GammDetLevel";}
@@ -1006,25 +1165,30 @@ bool GammaGamma(TRuntimeObjects& obj, TGretinaHit hit1, TGretinaHit hit2, TS800 
   for(int x=2; x<4; x++) {
   if(size == x) {
 
-    obj.FillHistogram(dirname,Form("GammaGamma(Beta)Mult%i_%s",x,outgoing->GetName())
-		                                                ,2000,0,4000,hit1.GetDoppler(GValue::Value("BETA"))
-		                                                ,2000,0,4000,hit2.GetDoppler(GValue::Value("BETA")));
+    obj.FillHistogram(dirname,Form("GammaGamma(Beta)Mult%i_%s",size,outgoing->GetName())
+		                                              ,2000,0,4000,hit1.GetDoppler(GValue::Value("BETA"))
+		                                              ,2000,0,4000,hit2.GetDoppler(GValue::Value("BETA")));
 
-    obj.FillHistogram(dirname,Form("GammaGamma(Beta&Track)Mult%i_%s",x,outgoing->GetName())
+    obj.FillHistogram(dirname,Form("GammaGamma(Beta&Track)Mult%i_%s",size,outgoing->GetName())
 		      ,2000,0,4000,hit1.GetDoppler(GValue::Value("BETA"),&track)
 		      ,2000,0,4000,hit2.GetDoppler(GValue::Value("BETA"),&track));
 
-    obj.FillHistogram(dirname,Form("GammaGamma(Beta&Track&YTA)Mult%i_%s",x,outgoing->GetName())
+    obj.FillHistogram(dirname,Form("GammaGamma(Beta&Track&YTA)Mult%i_%s",size,outgoing->GetName())
 		      ,2000,0,4000,hit1.GetDopplerYta(GValue::Value("BETA"),yta,&track)
 		      ,2000,0,4000,hit2.GetDopplerYta(GValue::Value("BETA"),yta,&track));
 
-    obj.FillHistogram(dirname,Form("GammaGamma(Beta&Track&YTA&DTA)Mult%i_%s",x,outgoing->GetName())
+    obj.FillHistogram(dirname,Form("GammaGamma(Beta&Track&YTA&DTA)Mult%i_%s",size,outgoing->GetName())
 		      ,2000,0,4000,hit1.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track)
 		      ,2000,0,4000,hit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")),yta,&track));
       
       
   } //end if(size== x)
   } //end multiplicity for loop
+
+  if(size > 3)
+    {obj.FillHistogram(dirname,Form("GammaGamma(Beta&Track&YTA)Mult4+_%s",outgoing->GetName())
+		    ,2000,0,4000,hit1.GetDopplerYta(GValue::Value("BETA"),yta,&track)
+		    ,2000,0,4000,hit2.GetDopplerYta(GValue::Value("BETA"),yta,&track));}
 
   } //end if(hit1.GetCoreEnergy > 100 && hit2.GetCoreEnergy > 100)
 
@@ -1427,10 +1591,15 @@ bool HandleGretina_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing, 
   ///////////////////////////////////////////////////////////////////
   if(!outgoing)
     {return false;}
+
+  //std::string name = outgoing->GetName();
+  
+  //if(name.compare("69Cu"))
+  //{return false;}
   
   if(!outgoing->IsInside(s800->GetMTofObjE1(),s800->GetIonChamber().Charge()))
     {return false;}
-
+  
   if(!time_energy) {
    for(unsigned int i=0;i<gretina->Size();i++) {
     TGretinaHit hit = gretina->GetGretinaHit(i);
@@ -1444,7 +1613,6 @@ bool HandleGretina_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing, 
     } //end second gretina hit loop 
    } //end first gretina hit loop
    
-   
    for(int i=0;i<gretina->AddbackSize();i++) {
     TGretinaHit hit = gretina->GetAddbackHit(i);
     Gretina_PIDOUTGatedSpectra(obj,hit,s800,bank29,gretina->AddbackSize(),true,incoming,outgoing,time_energy);
@@ -1453,54 +1621,69 @@ bool HandleGretina_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing, 
     for(unsigned int j=0;j<gretina->AddbackSize();j++){
       if(i==j) continue; //want different hits
       TGretinaHit hit2 = gretina->GetAddbackHit(j);
-      GammaGamma(obj,hit,hit2,s800,gretina->Size(),true,incoming,outgoing,time_energy);
+      GammaGamma(obj,hit,hit2,s800,gretina->AddbackSize(),true,incoming,outgoing,time_energy);
     } //end second gretina addback hit loop
    } //end first gretina addback hit loop 
   } //end if(!time_energy)
+  
+   int size = gretina->Size();
+  
+   if(incoming) {
+     obj.FillHistogram(Form("Gretina_%s_TEGate",incoming->GetName()),Form("TrueMult_%s",outgoing->GetName()),100,0,100,size);
+   }
 
-  //////////////////////////////////////////////////////////////////////////
-  //Time-Energy Gate on Gamma Enery vs Banke29 TimeStamp - GretinaHit Time//
-  //////////////////////////////////////////////////////////////////////////
-  if(time_energy) {
-   for(unsigned int i=0;i<gretina->Size();i++) {
+   if(time_energy) {
+
+   //////////////////////////////////////////////////////////////////////////
+   //Time-Energy Gate on Gamma Enery vs Banke29 TimeStamp - GretinaHit Time//
+   //////////////////////////////////////////////////////////////////////////
+   TVector3 track = s800->Track();
+   TGretina* good_gretina = new TGretina();
+   
+   for(unsigned int i=0;i<size;i++) {
      
     TGretinaHit hit = gretina->GetGretinaHit(i);
-    TVector3 track = s800->Track();
     if(!time_energy->IsInside(bank29->Timestamp() - hit.GetTime(),hit.GetDoppler(GValue::Value("BETA"),&track)))
-      {return false;}
+      {continue;}
+
+    good_gretina->InsertHit(hit);
     
-    Gretina_PIDOUTGatedSpectra(obj,hit,s800,bank29,gretina->Size(),false,incoming,outgoing,time_energy);  
+    Gretina_PIDOUTGatedSpectra(obj,hit,s800,bank29,size,false,incoming,outgoing,time_energy);  
     //GammaCorrelations(obj,hit,s800,incoming,outgoing,time_energy);
 
-    for(unsigned int j=0;j<gretina->Size();j++){
+    for(unsigned int j=0;j<size;j++){
       if(i==j) continue; //want different hits
       TGretinaHit hit2 = gretina->GetGretinaHit(j);
       
       if(!time_energy->IsInside(bank29->Timestamp() - hit2.GetTime(),hit2.GetDoppler(GValue::Value("BETA"),&track)))
-        {return false;}
+        {continue;}
       
-      GammaGamma(obj,hit,hit2,s800,gretina->Size(),false,incoming,outgoing,time_energy);
+      GammaGamma(obj,hit,hit2,s800,size,false,incoming,outgoing,time_energy);
     } //end second gretina hit loop
-   } //end first gretina hit loop 
+   } //end first gretina hit loop
 
+  int ABsize = good_gretina->AddbackSize();
+
+  if(incoming) {
+     obj.FillHistogram(Form("Gretina_%s_%s",incoming->GetName(),time_energy->GetName()),Form("GoodTE_Mult_%s"
+		       ,outgoing->GetName()),100,0,100,size);
+  
+     obj.FillHistogram(Form("AB_Gretina_%s_%s",incoming->GetName(),time_energy->GetName()),Form("GoodTE_AB_Mult_%s"
+		       ,outgoing->GetName()),100,0,100,ABsize);
+  }
    
-   for(int i=0;i<gretina->AddbackSize();i++) {
+   for(int i=0;i<ABsize;i++) {
      
-    TGretinaHit hit = gretina->GetAddbackHit(i);
-    TVector3 track = s800->Track();
-    if(!time_energy->IsInside(bank29->Timestamp() - hit.GetTime(),hit.GetDoppler(GValue::Value("BETA"),&track)))
-      {return false;}
-    Gretina_PIDOUTGatedSpectra(obj,hit,s800,bank29,gretina->AddbackSize(),true,incoming,outgoing,time_energy);  
+    TGretinaHit hit = good_gretina->GetAddbackHit(i);
+    
+    Gretina_PIDOUTGatedSpectra(obj,hit,s800,bank29,ABsize,true,incoming,outgoing,time_energy);  
     //GammaCorrelations(obj,hit,s800,incoming,outgoing,time_energy);
 
-    for(unsigned int j=0;j<gretina->AddbackSize();j++){
+    for(unsigned int j=0;j<ABsize;j++){
       if(i==j) continue; //want different hits
-      TGretinaHit hit2 = gretina->GetAddbackHit(j);
+      TGretinaHit hit2 = good_gretina->GetAddbackHit(j);
       
-      if(!time_energy->IsInside(bank29->Timestamp() - hit2.GetTime(),hit2.GetDoppler(GValue::Value("BETA"),&track)))
-        {return false;}
-      
-      GammaGamma(obj,hit,hit2,s800,gretina->Size(),true,incoming,outgoing,time_energy);
+      GammaGamma(obj,hit,hit2,s800,ABsize,true,incoming,outgoing,time_energy);
 
     } //end second gretina addback hit loop
    } //end first gretina addback hit loop
