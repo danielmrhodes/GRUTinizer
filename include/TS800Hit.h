@@ -129,7 +129,6 @@ class TCrdc : public TDetectorHit {
     short GetAnode() { return anode; }
     short GetTime()  { return time;  }
     float GetTimeRand()  { return ((float)(time)+gRandom->Uniform());  }
-    int GetSampleWidth() { return sample_width; } 
 
     int  Size()        const { return channel.size(); }
     int  GetNSamples() const { return sample.size(); }
@@ -137,7 +136,6 @@ class TCrdc : public TDetectorHit {
     void SetId(short id)    { fId = id;  }
     void SetAnode(short an) {anode = an; }
     void SetTime(short ti)  {time = ti;  }
-    void SetSampleWidth(int wi) { sample_width = wi; } 
 
 
     int  Address(int i) const { return TDetectorHit::Address() + channel.at(i); }
@@ -177,7 +175,6 @@ class TCrdc : public TDetectorHit {
 
     unsigned short anode;
     unsigned short time;
-    int sample_width;
 
     mutable bool has_cached_dispersive_x; //!
     mutable double cached_dispersive_x; //!
@@ -389,22 +386,14 @@ class TMTof : public TDetectorHit {
     //TARGET_MTOF_# GValues. Values are set in TMTof as fCorrelatedXfp,
     //fCorrelatedXfp, etc.  Note that if the GValues are not set, the first
     //value in each time-of-flight is taken.
-   double  GetCorrelatedXfp()  const; 
-    double  GetCorrelatedObj()  const;
-    double  GetCorrelatedE1Up() const;
-
-    double  GetCorrelatedXfpE1()  const { return GetCorrelatedXfp()-GetCorrelatedE1Up(); }  //!
-    double  GetCorrelatedObjE1()  const { return GetCorrelatedObj()-GetCorrelatedE1Up(); }  //!
+    double  GetCorrelatedXfpE1()  const;   //!
+    double  GetCorrelatedObjE1()  const;   //!
 
 
 
   private:
-    mutable double fCorrelatedXFP;   //!
-    mutable double fCorrelatedOBJ;   //!
-    mutable double fCorrelatedE1Up;    //!
-    //mutable int fCorrelatedXFP_Ch15;   //!
-    //mutable int fCorrelatedOBJ_Ch15;   //!
-    //mutable int fCorrelatedE1_Ch15;    //!
+    mutable double fCorrelatedXFPE1;   //!
+    mutable double fCorrelatedOBJE1;   //!
 
   public:
     std::vector<unsigned short> fE1Up;         // Channel 0

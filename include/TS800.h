@@ -95,29 +95,16 @@ public:
   
   float GetRawXF_MESY(unsigned int i=0) const;
 
-  //float GetMTOF_ObjE1(unsigned int i=0,bool find_best=true) const; // { return GetCorrTOF_OBJ_MESY(i); }
-  //float GetMTOF_XfpE1(unsigned int i=0,bool find_best=true) const; // { return GetXF_E1Raw_MESY(i);    }
-  //float GetMTOF_RfE1(unsigned int i=0)  const { return GetME1Up(i) - GetMRf(i);  }
-  //float GetMTOF_ObjRf(unsigned int i=0) const { return GetMRf(i)   - GetMObj(i); }
-
-  double MCorrelatedOBJ() const { return GetMTof().GetCorrelatedObj(); }
-  double MCorrelatedXFP() const { return GetMTof().GetCorrelatedXfp(); }
-  double MCorrelatedE1() const  { return GetMTof().GetCorrelatedE1Up();  }
-  
-  double GetMTofObjE1() const ; // I return the correlated gvalue corrected time-of-flight obj to e1.
-  double GetMTofXfpE1() const ; // I return the correlated gvalue corrected time-of-flight xfp to e1.
-
-  
-  
-  //float MCorrelatedOBJ_E1(bool corrected=true) const;
-  //float MCorrelatedXFP_E1(bool corrected=true) const;
-
-  //float MCorrelatedOBJ_Ch15() const;
-  //float MCorrelatedXFP_Ch15() const;
-  //float MCorrelatedE1_Ch15() const;
-  //float MCorrelatedOBJ_E1_Ch15(bool corrected=true) const;
-  //float MCorrelatedXFP_E1_Ch15(bool corrected=true) const;
-
+  // Return the correlated gvalue corrected time-of-flight obj to e1.
+  // If no corrections are passed, GValues OBJ_MTOF_CORR_AFP and 
+  // OBJ_MTOF_CORR_XFP are used
+  double GetMTofObjE1() const ; 
+  double GetMTofObjE1(double afp_cor, double xfp_cor) const ; 
+  // Return the correlated gvalue corrected time-of-flight xfp to e1.
+  // If no corrections are passed, GValues XFP_MTOF_CORR_AFP and 
+  // XFP_MTOF_CORR_XFP are used
+  double GetMTofXfpE1() const ; 
+  double GetMTofXfpE1(double afp_cor, double xfp_cor) const ; 
 
   unsigned short GetME1Up(int i)       const {if(i<GetME1Size())   return mtof.fE1Up.at(i);  return sqrt(-1); }     
   unsigned short GetME1Down(int i)     const {if(i<GetME1Size())   return mtof.fE1Down.at(i);return sqrt(-1); }    
