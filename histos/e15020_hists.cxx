@@ -45,6 +45,8 @@ std::map<int,int> crysThetaMap = {{26,1}, {30,1}, {34,1}, {38,1}, {25,2}, {29,2}
 				  {68,8}, {76,8}, {62,9}, {70,9}, {78,9}, {56,10},{64,10},{57,11},{65,11},{61,12},{69,12},
 				  {77,12}};
 
+const double RUN114_MAX_EVENT_NUM = 3837000.0;
+
 bool HandleTiming_Gated(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) {
   TS800 *s800  = obj.GetDetector<TS800>();
   
@@ -80,30 +82,26 @@ bool HandleTiming_Gated(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) 
 
   obj.FillHistogram(dirname,"Register",10,0,10,s800->GetReg());
   
-
-  obj.FillHistogram(dirname,"E1",4000,0,64000,s800->GetMTof().GetCorrelatedE1Up());
-
-  obj.FillHistogram(dirname,"Xfp",4000,0,64000,s800->GetMTof().GetCorrelatedXfp());
-
-  obj.FillHistogram(dirname,"Obj",4000,0,64000,s800->GetMTof().GetCorrelatedObj());
+  
+  obj.FillHistogram(dirname,"E1_first",4000,0,64000,s800->GetME1Up(0));
 
   obj.FillHistogram(dirname,"Xfp-E1",4000,-10000,10000,s800->GetMTof().GetCorrelatedXfpE1());
 
   obj.FillHistogram(dirname,"Obj-E1",4000,-10000,10000,s800->GetMTof().GetCorrelatedObjE1());
 
-  obj.FillHistogram(dirname,"Obj-Xfp",2000,-6000,-4000
-		                     ,s800->GetMTof().GetCorrelatedObj() - s800->GetMTof().GetCorrelatedXfp());
+  obj.FillHistogram(dirname,"Obj-Xfp",800,-5200,-4400
+  		                     ,s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1());
 
-  obj.FillHistogram(dirname,"Xfp-Obj",2000,4000,6000
-		                     ,s800->GetMTof().GetCorrelatedXfp() - s800->GetMTof().GetCorrelatedObj());
-
+  obj.FillHistogram(dirname,"Xfp-Obj",800,4400,5200
+  		                     ,s800->GetMTof().GetCorrelatedXfpE1() - s800->GetMTof().GetCorrelatedObjE1());
+  
   obj.FillHistogram(dirname,"E1_raw",4000,0,64000,s800->GetMTof().fE1Up);
 
   obj.FillHistogram(dirname,"Xfp_raw",4000,0,64000,s800->GetMTof().fXfp);
  
   obj.FillHistogram(dirname,"Obj_raw",4000,0,64000,s800->GetMTof().fObj);
 
-  if(s800->GetReg() == 2) {
+  if(s800->GetReg() == 2 || s800->GetReg() == 3) {
    obj.FillHistogram(dirname,"E1_Coin_raw",4000,0,64000,s800->GetMTof().fE1Up);
 
    obj.FillHistogram(dirname,"Xfp_Coin_raw",4000,0,64000,s800->GetMTof().fXfp);
@@ -111,7 +109,7 @@ bool HandleTiming_Gated(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) 
    obj.FillHistogram(dirname,"Obj_Coin_raw",4000,0,64000,s800->GetMTof().fObj);
   }
 
-  if(s800->GetReg() == 1) {
+  if(s800->GetReg() == 1 || s800->GetReg() == 3) {
    obj.FillHistogram(dirname,"E1_Sing_raw",4000,0,64000,s800->GetMTof().fE1Up);
 
    obj.FillHistogram(dirname,"Xfp_Sing_raw",4000,0,64000,s800->GetMTof().fXfp);
@@ -122,13 +120,13 @@ bool HandleTiming_Gated(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) 
   
   for(int i=0; i<E1UpSize; i++) {
    for(int j=0; j<XfpSize;j++) {  
-     obj.FillHistogram(dirname,"Xfp-E1_raw",4000,2000,6000,s800->GetMTof().fXfp.at(j) - s800->GetMTof().fE1Up.at(i));
+     obj.FillHistogram(dirname,"Xfp-E1_raw",4000,-10000,10000,s800->GetMTof().fXfp.at(j) - s800->GetMTof().fE1Up.at(i));
    }
   }
   
   for(int i=0; i<E1UpSize; i++) {
    for(int j=0; j<ObjSize;j++) { 
-     obj.FillHistogram(dirname,"Obj-E1_raw",4000,-2000,0,s800->GetMTof().fObj.at(j) - s800->GetMTof().fE1Up.at(i));
+     obj.FillHistogram(dirname,"Obj-E1_raw",4000,-10000,10000,s800->GetMTof().fObj.at(j) - s800->GetMTof().fE1Up.at(i));
    }
   }
 
@@ -143,17 +141,17 @@ bool HandleTiming_Gated(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) 
     {obj.FillHistogram(dirname,"TrigBit",10,0,10,Coin);}
 
   } //end if(!outgoing)
-
+  
   if(!outgoing)
     {return false;}
   if(!outgoing->IsInside(s800->GetMTofObjE1(),s800->GetIonChamber().Charge()))
     {return false;}
 
-  obj.FillHistogram(dirname,Form("Obj-Xfp_%s",outgoing->GetName()),2000,-6000,-4000
-		    ,s800->GetMTof().GetCorrelatedObj() - s800->GetMTof().GetCorrelatedXfp());
+  obj.FillHistogram(dirname,Form("Obj-Xfp_%s",outgoing->GetName()),800,-5200,-4400
+		    ,s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1());
 
-  obj.FillHistogram(dirname,Form("Xfp-Obj_%s",outgoing->GetName()),2000,4000,6000
-		    ,s800->GetMTof().GetCorrelatedXfp() - s800->GetMTof().GetCorrelatedObj());
+  obj.FillHistogram(dirname,Form("Xfp-Obj_%s",outgoing->GetName()),800,4400,5200
+		    ,s800->GetMTof().GetCorrelatedXfpE1() - s800->GetMTof().GetCorrelatedObjE1());
 
   obj.FillHistogram(dirname,Form("Register_%s",outgoing->GetName()),10,0,10,s800->GetReg());
 
@@ -165,7 +163,9 @@ bool HandleTiming_Gated(TRuntimeObjects &obj, TCutG *incoming, TCutG* outgoing) 
     {obj.FillHistogram(dirname,Form("TrigBit_%s",outgoing->GetName()),10,0,10,Sing);}
 
   if(Coin!=0) 
-    {obj.FillHistogram(dirname,Form("TrigBit_%s",outgoing->GetName()),10,0,10,Coin);}        
+    {obj.FillHistogram(dirname,Form("TrigBit_%s",outgoing->GetName()),10,0,10,Coin);} 
+
+        
   return true;
 }
 
@@ -183,6 +183,8 @@ bool HandleS800Singles_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoi
 
   if(!s800)
     {return false;}
+
+  if(s800->GetReg() == 1 || s800->GetReg() == 3) {
   
   std::string dirname;
 
@@ -213,14 +215,12 @@ bool HandleS800Singles_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoi
       return false;
   }*/
 
-  if(!outgoing) {
-
   //s800 Singles Only
   dirname = "s800Singles";
   if(incoming)
     {dirname=Form("s800Singles_%s",incoming->GetName());}
 
-  if(s800->GetReg() == 1) {
+  if(!outgoing) {
 
    obj.FillHistogram(dirname,"Ion_v_Obj-E1",1400,-1500,-800,s800->GetMTofObjE1()
                                            ,1600,20000,35000,s800->GetIonChamber().Charge());
@@ -365,7 +365,7 @@ bool HandleS800_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
 	} // end if(sizes > 0)
 
       obj.FillHistogram(dirname,"AFP_v_Obj-Xfp_Uncorrected"
-			,600,-5100,-4500,s800->GetMTof().GetCorrelatedObj() - s800->GetMTof().GetCorrelatedXfp()
+			,600,-5100,-4500,s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()
 		        ,500,-0.05,0.05,s800->GetAFP());
       
 
@@ -401,6 +401,40 @@ bool HandleS800_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
   } //end if((!outgoing) && (!incoming))
   
   if(!outgoing) {
+
+    //Gates on Obj-Xfp (1D)
+    //if(((s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()) > -4812.0) &&  (((s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()) < -4803.5))) { //72Ga "only" will pass this gate
+
+    //if(((s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()) > -4786) &&  (((s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()) < -4767))) { // 70Zn "only" will pass this gate
+
+    if(((s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()) > -4793) &&  (((s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()) < -4767))) { //This gate gives a good 70Zn/72Ga ratio
+
+      dirname = "ObjXfp1DGate";
+      if(incoming)
+	{dirname += Form("_%s",incoming->GetName());}
+      
+      obj.FillHistogram(dirname,"Obj-Xfp",800,-5200,-4400
+		       ,s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1());
+
+      obj.FillHistogram(dirname,"Xfp-E1_v_Obj-E1_Uncorrected",800,-1500,-700,s800->GetMTof().GetCorrelatedObjE1()
+		                                             ,1400,3000,4400,s800->GetMTof().GetCorrelatedXfpE1());
+
+      obj.FillHistogram(dirname,"Charge_v_Obj-E1",1400,-1500,-800,s800->GetMTofObjE1()
+                                                 ,1600,20000,35000,s800->GetIonChamber().Charge());
+
+      obj.FillHistogram(dirname,"Register",10,0,10,s800->GetReg());
+
+      unsigned int reg = s800->GetReg();
+      unsigned int Sing = reg&1;
+      unsigned int Coin = reg&2;
+
+      if(Sing!=0) 
+        {obj.FillHistogram(dirname,"TrigBit",10,0,10,Sing);}
+
+      if(Coin!=0) 
+        {obj.FillHistogram(dirname,"TrigBit",10,0,10,Coin);} 
+      
+    } //end Obj-Xfp 1D Gate 
   
   //Incoming PID Plots
   dirname = "IncPID";
@@ -410,8 +444,8 @@ bool HandleS800_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
   obj.FillHistogram(dirname,"Xfp-E1_v_Obj-E1",1400,-1500,-700,s800->GetMTofObjE1()
         	                             ,2800,3000,4400,s800->GetMTofXfpE1());
 
-  obj.FillHistogram(dirname,"Xfp_v_Obj_Uncorrected",1500,11000,14000,s800->GetMTof().GetCorrelatedObj()
-		                                   ,1250,16000,18500,s800->GetMTof().GetCorrelatedXfp());
+  obj.FillHistogram(dirname,"Xfp_v_Obj_Uncorrected",1500,11000,14000,s800->GetMTof().GetCorrelatedObjE1()
+		                                   ,1250,16000,18500,s800->GetMTof().GetCorrelatedXfpE1());
 
   obj.FillHistogram(dirname,"Xfp-E1_v_Obj-E1_Uncorrected",800,-1500,-700,s800->GetMTof().GetCorrelatedObjE1()
 		                                         ,1400,3000,4400,s800->GetMTof().GetCorrelatedXfpE1());
@@ -557,7 +591,7 @@ bool HandleS800_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
                                                       ,500,-0.05,0.05,s800->GetAFP());
 
   obj.FillHistogram(dirname,"AFP_v_Obj-Xfp_Uncorrected",600,-5100,-4500
-		    ,s800->GetMTof().GetCorrelatedObj() - s800->GetMTof().GetCorrelatedXfp()
+		    ,s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()
 		    ,500,-0.05,0.05,s800->GetAFP());
 
   obj.FillHistogram(dirname,"AFP_v_Obj-Xfp",600,-5100,-4500
@@ -639,6 +673,41 @@ bool HandleS800_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
 		                                                          ,350,3500,3850,s800->GetMTofXfpE1());
 
   obj.FillHistogram(dirname,Form("EvtNum_%s",outgoing->GetName()),5000,0,5000000,s800->GetEventCounter());
+  
+
+  //Gates on Obj-Xfp (1D)
+  //if(((s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()) > -4812.0) &&  (((s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()) < -4803.5))) { //72Ga "only" will pass this gate
+
+  //if(((s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()) > -4786) &&  (((s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()) < -4767))) { // 70Zn "only" will pass this gate
+
+  if(((s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()) > -4793) &&  (((s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()) < -4767))) { //This gate gives a good 70Zn/72Ga ratio
+
+      dirname = "ObjXfp1DGate";
+      if(incoming)
+	{dirname += Form("_%s",incoming->GetName());}
+      
+      obj.FillHistogram(dirname,Form("Obj-Xfp_%s",outgoing->GetName()),800,-5200,-4400
+		       ,s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1());
+
+      obj.FillHistogram(dirname,Form("Xfp-E1_v_Obj-E1_Uncorrected_%s",outgoing->GetName()),800,-1500,-700
+			,s800->GetMTof().GetCorrelatedObjE1(),1400,3000,4400,s800->GetMTof().GetCorrelatedXfpE1());
+
+      obj.FillHistogram(dirname,Form("Charge_v_Obj-E1_%s",outgoing->GetName()),1400,-1500,-800,s800->GetMTofObjE1()
+                                                                              ,1600,20000,35000,s800->GetIonChamber().Charge());
+
+      obj.FillHistogram(dirname,Form("Register_%s",outgoing->GetName()),10,0,10,s800->GetReg());
+
+      unsigned int reg = s800->GetReg();
+      unsigned int Sing = reg&1;
+      unsigned int Coin = reg&2;
+
+      if(Sing!=0) 
+        {obj.FillHistogram(dirname,Form("TrigBit_%s",outgoing->GetName()),10,0,10,Sing);}
+
+      if(Coin!=0) 
+        {obj.FillHistogram(dirname,Form("TrigBit_%s",outgoing->GetName()),10,0,10,Coin);}
+      
+    } //end Obj-Xfp 1D Gate 
     
   //Incoming PID Plots
   dirname = "IncPID";
@@ -649,8 +718,8 @@ bool HandleS800_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
         	                                                          ,2800,3000,4400,s800->GetMTofXfpE1());
 
   obj.FillHistogram(dirname,Form("Xfp_v_Obj_Uncorrected_%s",outgoing->GetName())
-		                                           ,1500,11000,14000,s800->GetMTof().GetCorrelatedObj()
-		                                           ,1250,16000,18500,s800->GetMTof().GetCorrelatedXfp());
+		                                           ,1500,11000,14000,s800->GetMTof().GetCorrelatedObjE1()
+		                                           ,1250,16000,18500,s800->GetMTof().GetCorrelatedXfpE1());
 
   obj.FillHistogram(dirname,Form("Xfp-E1_v_Obj-E1_Uncorrected_%s",outgoing->GetName())
 		                                                ,400,-1500,-700,s800->GetMTof().GetCorrelatedObjE1()
@@ -784,7 +853,7 @@ bool HandleS800_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing) {
                                                              ,500,-0.05,0.05,s800->GetAFP());
 
  obj.FillHistogram(dirname,Form("AFP_v_Obj-Xfp_Uncorrected_%s",outgoing->GetName())
-		   ,600,-5100,-4500,s800->GetMTof().GetCorrelatedObj() - s800->GetMTof().GetCorrelatedXfp()
+		   ,600,-5100,-4500,s800->GetMTof().GetCorrelatedObjE1() - s800->GetMTof().GetCorrelatedXfpE1()
 		   ,500,-0.05,0.05,s800->GetAFP());
 
  obj.FillHistogram(dirname,Form("AFP_v_Obj-Xfp_%s",outgoing->GetName())
@@ -1626,7 +1695,7 @@ bool HandleGretina_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing, 
    } //end first gretina addback hit loop 
   } //end if(!time_energy)
   
-   int size = gretina->Size();
+   unsigned int size = gretina->Size();
   
    if(incoming) {
      obj.FillHistogram(Form("Gretina_%s_TEGate",incoming->GetName()),Form("TrueMult_%s",outgoing->GetName()),100,0,100,size);
@@ -1662,7 +1731,7 @@ bool HandleGretina_Gated(TRuntimeObjects &obj,TCutG *incoming, TCutG* outgoing, 
     } //end second gretina hit loop
    } //end first gretina hit loop
 
-  int ABsize = good_gretina->AddbackSize();
+  unsigned int ABsize = good_gretina->AddbackSize();
 
   if(incoming) {
      obj.FillHistogram(Form("Gretina_%s_%s",incoming->GetName(),time_energy->GetName()),Form("GoodTE_Mult_%s"
@@ -1719,7 +1788,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   }
   
   //HandleS800(obj); 
-  HandleGretina(obj);
+  //HandleGretina(obj);
   
   for(size_t i=0;i<incoming_cuts.size();i++) {
    for(size_t j=0;j<outgoing_cuts.size();j++) {
@@ -1729,35 +1798,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
      //HandleS800Singles_Gated(obj,incoming_cuts.at(i),outgoing_cuts.at(j));
      
      for(size_t k=0;k<time_energy_cuts.size();k++) {
-       HandleGretina_Gated(obj,incoming_cuts.at(i),outgoing_cuts.at(j),time_energy_cuts.at(k));
+       //HandleGretina_Gated(obj,incoming_cuts.at(i),outgoing_cuts.at(j),time_energy_cuts.at(k));
        //HandleS800andGretina_Gated(obj,incoming_cuts.at(i),outgoing_cuts.at(j),time_energy_cuts.at(k));
        
     } //end time_energy gate loop 
    } //end outgoing gate loop
   } //end incoming gate loop
-
-  
-//      obj.FillHistogram(dirname,histname,
-//          600,-600,600,bank29->Timestamp()-hit.GetTime(),
-//          2000,0,4000,hit.GetCoreEnergy());
-
-
-  
-
-//  TList *gates = &(obj.GetGates());
-//  if(gretina) {
-//    for(unsigned int i=0;i<gretina->Size();i++) {
-//      TGretinaHit hit = gretina->GetGretinaHit(i);
-//      histname = "Gretina_Bank29_time";
-//      obj.FillHistogram(dirname,histname,
-//          600,-600,600,bank29->Timestamp()-hit.Timestamp(),
-//          2000,0,4000,hit.GetCoreEnergy());
-//      histname = "Gretina_t0_Bank29_time";
-//      obj.FillHistogram(dirname,histname,
-//          600,-600,600,bank29->Timestamp()-hit.GetTime(),
-//          2000,0,4000,hit.GetCoreEnergy());
-//    }
-//  }
 
   if(numobj!=list->GetSize())
     list->Sort();
