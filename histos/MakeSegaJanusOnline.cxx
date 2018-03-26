@@ -28,7 +28,7 @@
 #include "TNucleus.h"
 
 
-static auto beam = std::make_shared<TNucleus>("72Se");
+static auto beam = std::make_shared<TNucleus>("76Se");
 static auto targ = std::make_shared<TNucleus>("208Pb");
 static TSRIM srim("se72_in_pb208.txt");
 double thickness = (GValue::Value("targetthick") / 11342.0) * 1e4; // (0.75 mg/cm^2) / (11342 mg/cm^3) * (10^4 um/cm)
@@ -51,7 +51,7 @@ void MakeSega(TRuntimeObjects& obj) {
   TJanusDDAS* janus = obj.GetDetector<TJanusDDAS>();
   for(size_t x=0;x<sega->Size();x++) {
     TSegaHit &hit = sega->GetSegaHit(x);
-    obj.FillHistogram("sega_summary",16,0,16,hit.GetDetnum(),
+    obj.FillHistogram("sega_summary",16,1,17,hit.GetDetnum(),
         3000,0,3000,hit.GetEnergy());
     obj.FillHistogram("sega_uptime",540,0,5400,hit.Timestamp()/1e9,
         20,0,20,hit.GetDetnum());
@@ -166,8 +166,8 @@ void MakeCalJanus(TRuntimeObjects &obj) {
 
     double perp, theta, phi, mag;
 
-    double xoff = -0.13;
-    double yoff = 0.17;
+    double xoff = 0.;
+    double yoff = 0.;
 
     for(int i=0;i<1;i++){ // NOTE 10x STATS ON MAPS - makes things clearer
       perp = jhit.GetPosition().Perp() + gRandom->Rndm()*.1 - .045;
@@ -238,6 +238,8 @@ void MakeCalJanus(TRuntimeObjects &obj) {
     if(sega)  {                                     
       for(int y=0;y<sega->Size();y++) {
         TSegaHit shit = sega->GetSegaHit(y);
+
+
         obj.FillHistogram("doppler_plus_any",1000,0,3000,shit.GetDoppler(0.08,jhit.GetPosition()));
         obj.FillHistogram("sega_plus_any",1500,0,3000,shit.GetEnergy());
 
@@ -252,29 +254,40 @@ void MakeCalJanus(TRuntimeObjects &obj) {
           obj.FillHistogram("Upstream_Coinc",1024,0,2048,shit.GetDoppler(b,jhit.GetPosition()),
                                               512,0,8192,jhit.GetEnergy());
 
+        TVector3 segaoff;
+        segaoff.SetXYZ(0,0,3);
+        TVector3 newsega = segaoff + shit.GetPosition();
+        obj.FillHistogram("SegaPositions",Form("ThetaPhi_%i",shit.GetDetnum()),180,0,180,newsega.Theta()*TMath::RadToDeg(),
+                                                                        180,-180,180,newsega.Phi()*TMath::RadToDeg());
+
         for(int z=0;z<kin_gates.size();z++) {
           GCutG *cut = kin_gates.at(z);
           if(!cut->IsInside(jhit.GetPosition().Theta()*TMath::RadToDeg(),
                 jhit.GetEnergy())) continue;
-          if(!strcmp(cut->GetName(),"Se72") || !strcmp(cut->GetName(),"upstream")) {
+          if(!strcmp(cut->GetName(),"Se76") || !strcmp(cut->GetName(),"upstream")) {
+              //std::cout << "Found Se76" << std::endl;
             b=reaction.AnalysisBetaFromThetaLab(jhit.GetPosition().Theta(),2);
             obj.FillHistogram(Form("doppler_%s",cut->GetName()),1000,0,3000,
-                shit.GetDoppler(b,jhit.GetPosition()));
+                shit.GetDoppler(b,jhit.GetPosition(),segaoff));
             obj.FillHistogram(Form("timing_%s",cut->GetName()),2000,-10000,10000,jhit.Timestamp()-shit.Timestamp(),
-                1500,0,3000,shit.GetDoppler(b,jhit.GetPosition()));
+                1500,0,3000,shit.GetDoppler(b,jhit.GetPosition(),segaoff));
             obj.FillHistogram(Form("doppler_ring_%s",cut->GetName()),
                 24,0,24,jhit.GetRing()-1,
-                1000,0,3000,shit.GetDoppler(b,jhit.GetPosition()));                                              
+                1000,0,3000,shit.GetDoppler(b,jhit.GetPosition(),segaoff));                                              
             obj.FillHistogram(Form("doppler_e_Si_e_%s",cut->GetName()),512,0,2048,shit.GetDoppler(b,jhit.GetPosition()),
                 256,0,16384,jhit.GetEnergy());
             obj.FillHistogram(Form("energy_angle_%s",cut->GetName()),
                 90,0,180,shit.GetPosition().Angle(jhit.GetPosition())*TMath::RadToDeg(),
                 1000,0,3000,shit.GetEnergy());
+            if(!strcmp(cut->GetName(),"Se76")){
+                obj.FillHistogram(Form("SeGated_Doppler_SeGADet%i",shit.GetDetnum()),2048,0,2048,shit.GetDoppler(b,jhit.GetPosition(),segaoff),
+                                                                    32,0,32,shit.GetMainSegnum());
+            }
             for(int zz=y+1;zz<sega->Size();zz++) {
               TSegaHit shit2 = sega->GetSegaHit(zz);
               obj.FillHistogramSym(Form("dmat_%s",cut->GetName()),
-                  1000,0,3000,shit.GetDoppler(b,jhit.GetPosition()),
-                  1000,0,3000,shit2.GetDoppler(b,jhit.GetPosition()));
+                  1000,0,3000,shit.GetDoppler(b,jhit.GetPosition(),segaoff),
+                  1000,0,3000,shit2.GetDoppler(b,jhit.GetPosition(),segaoff));
             }
             if(!strcmp(cut->GetName(),"upstream")){
               obj.FillHistogram("si_e_uncorr_sega_upstream",512,0,2048,shit.GetEnergy(),
@@ -284,14 +297,27 @@ void MakeCalJanus(TRuntimeObjects &obj) {
             }
           } else {
             b=reaction.AnalysisBetaFromThetaLab(jhit.GetReconPosition().Theta(),2);
+            obj.FillHistogram(Form("doppler_E_angle_%s",cut->GetName()),1024,0,2048,shit.GetDoppler(b,jhit.GetReconPosition(),segaoff),
+                                                                90,0,180,jhit.GetReconPosition().Angle(shit.GetPosition())*TMath::RadToDeg());
+            b = b/2;
+            obj.FillHistogram(Form("doppler_E_angle_newbeta_%s",cut->GetName()),1024,0,2048,shit.GetDoppler(b,jhit.GetReconPosition(),segaoff),
+                                                                90,0,180,jhit.GetReconPosition().Angle(shit.GetPosition())*TMath::RadToDeg());
+
             obj.FillHistogram(Form("doppler_%s",cut->GetName()),1000,0,3000,
-                shit.GetDoppler(b,jhit.GetReconPosition()));
+                shit.GetDoppler(b,jhit.GetReconPosition(),segaoff));
             obj.FillHistogram(Form("doppler_ring_%s",cut->GetName()),
                 24,0,24,jhit.GetRing()-1,
-                1000,0,3000,shit.GetDoppler(b,jhit.GetReconPosition()));        
+                1000,0,3000,shit.GetDoppler(b,jhit.GetReconPosition(),segaoff));        
             obj.FillHistogram(Form("energy_angle_%s",cut->GetName()),
                 90,0,180,shit.GetPosition().Angle(jhit.GetReconPosition())*TMath::RadToDeg(),
                 1000,0,3000,shit.GetEnergy());
+            for(int zz=y+1;zz<sega->Size();zz++) {
+              TSegaHit shit2 = sega->GetSegaHit(zz);
+              obj.FillHistogramSym(Form("dmat_%s",cut->GetName()),
+                  1000,0,3000,shit.GetDoppler(b,jhit.GetReconPosition(),segaoff),
+                  1000,0,3000,shit2.GetDoppler(b,jhit.GetReconPosition(),segaoff));
+            }
+
           }          
           obj.FillHistogram(Form("BetaDistribution_%s",cut->GetName()),
               90,0,180,jhit.GetPosition().Theta()*TMath::RadToDeg(),
@@ -336,7 +362,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
   if(janus) {
     MakeRawJanus(obj);
-    janus->BuildCorrelatedHits(600.,200.);
+    janus->BuildCorrelatedHits(1000.,200.);
     MakeRawJanus(obj);
     MakeCalJanus(obj);
   }
