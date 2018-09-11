@@ -38,6 +38,40 @@ void TS800Sim::Clear(Option_t *opt) {
   s800sim_hits.clear(); 
 }
 
+TVector3 TS800Sim::Track(double sata,double sbta) const {
+  //Dividing by 1000 because GRUTinizer uses radians for ATA/BTA
+  double ata = TMath::Sin(GetS800SimHit(0).GetATA()/1000.+sata);
+  double bta = TMath::Sin(GetS800SimHit(0).GetBTA()/1000.+sbta);
+  TVector3 track(ata,-bta,sqrt(1-ata*ata-bta*bta));
+  return track;//.Unit();
+}
+
+float TS800Sim::Azita(float ata, float bta) const{
+  float xsin = TMath::Sin(ata);
+  float ysin = TMath::Sin(bta);
+  float azita = 0.0;
+  if(xsin>0 && ysin>0){
+    azita = TMath::ATan(ysin/xsin);
+  } else if(xsin<0 && ysin>0){
+    azita = TMath::Pi()-TMath::ATan(ysin/TMath::Abs(xsin));
+  } else if(xsin<0 && ysin<0){
+    azita = TMath::Pi()+TMath::ATan(TMath::Abs(ysin)/TMath::Abs(xsin));
+  } else if(xsin>0 && ysin<0){
+    azita = 2.0*TMath::Pi()-TMath::ATan(TMath::Abs(ysin)/xsin);
+  } else{
+    azita = 0;
+  }
+  return azita;
+}
+
+float TS800Sim::AdjustedBeta(float beta) const {
+  const TS800SimHit &s800simhit = GetS800SimHit(0);
+  double gamma = 1.0/(sqrt(1.-beta*beta));
+  double dp_p = gamma/(1.+gamma) * s800simhit.GetDTA();
+  beta *=(1.+dp_p/(gamma*gamma));
+  return beta;
+}
+
 void TS800Sim::BuildFrom(TGEBEvent &event){
   const char* data = event.GetPayload();
   //  std::cout << " IN HERE !!!! " << std::endl;
