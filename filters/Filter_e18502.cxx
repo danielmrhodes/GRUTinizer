@@ -11,18 +11,12 @@
 extern "C"
 bool FilterCondition(TRuntimeObjects& obj) {
 
-
-  TSega *sega       = obj.GetDetector<TSega>();
   TJanusDDAS *janus = obj.GetDetector<TJanusDDAS>();
 
   if(!janus)
-    return false;
-
-  //if(!janus->Size())
-  //  return false;
+    {return false;}
 
   return true;
-
 
 }
 
