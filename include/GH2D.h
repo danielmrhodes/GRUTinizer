@@ -15,7 +15,7 @@
 
 #include <GH2.h>
 
-class GH2D : public GH2, public TArrayI {
+class GH2D : public GH2, public TArrayD {
 
 public:
   GH2D(); 

@@ -4,7 +4,7 @@
 
 ClassImp(GH2D)
 
-GH2D::GH2D(): GH2(),TArrayI() {
+GH2D::GH2D(): GH2(),TArrayD() {
   SetBinsLength(9);
   if(GH1::fgDefaultSumw2) Sumw2();
 }
@@ -12,7 +12,7 @@ GH2D::GH2D(): GH2(),TArrayI() {
 GH2D::GH2D(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins,
                                               Int_t nbinsy, const Double_t *ybins) :
   GH2(name,title,nbinsx,xbins,nbinsy,ybins) { 
-  TArrayI::Set(fNcells);
+  TArrayD::Set(fNcells);
   if(GH1::fgDefaultSumw2) Sumw2();
 }
 
@@ -20,7 +20,7 @@ GH2D::GH2D(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins
 GH2D::GH2D(const char *name,const char *title,Int_t nbinsx,const Float_t *xbins,
                                               Int_t nbinsy, const Float_t *ybins) :
   GH2(name,title,nbinsx,xbins,nbinsy,ybins) { 
-  TArrayI::Set(fNcells);
+  TArrayD::Set(fNcells);
   if(GH1::fgDefaultSumw2) Sumw2();
 }
 
@@ -28,7 +28,7 @@ GH2D::GH2D(const char *name,const char *title,Int_t nbinsx,const Float_t *xbins,
 GH2D::GH2D(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins,
                                               Int_t nbinsy, Double_t ylow, Double_t yup) :
   GH2(name,title,nbinsx,xbins,nbinsy,ylow,yup) {
-  TArrayI::Set(fNcells);
+  TArrayD::Set(fNcells);
   if(GH1::fgDefaultSumw2) Sumw2();
 }
 
@@ -36,7 +36,7 @@ GH2D::GH2D(const char *name,const char *title,Int_t nbinsx,const Double_t *xbins
 GH2D::GH2D(const char *name,const char *title,Int_t nbinsx, Double_t xlow, Double_t xup,
                                               Int_t nbinsy, Double_t *ybins) :
   GH2(name,title,nbinsx,xlow,xup,nbinsy,ybins) {
-  TArrayI::Set(fNcells);
+  TArrayD::Set(fNcells);
   if(GH1::fgDefaultSumw2) Sumw2();
 }
 
@@ -44,16 +44,16 @@ GH2D::GH2D(const char *name,const char *title,Int_t nbinsx, Double_t xlow, Doubl
 GH2D::GH2D(const char *name,const char *title,Int_t nbinsx, Double_t xlow, Double_t xup,
                                               Int_t nbinsy, Double_t ylow, Double_t yup) :
   GH2(name,title,nbinsx,xlow,xup,nbinsy,ylow,yup) {
-  TArrayI::Set(fNcells);
+  TArrayD::Set(fNcells);
   if(GH1::fgDefaultSumw2) Sumw2();
   if(xlow>=xup||ylow>=yup) SetBuffer(fgBufferSize);
 }
 
-GH2D::GH2D(const GH2D &obj) : GH2(), TArrayI() {
+GH2D::GH2D(const GH2D &obj) : GH2(), TArrayD() {
     ((GH2D&)obj).Copy(*this);
 }
 
-GH2D::GH2D(const TH1 &h2d) : GH2(), TArrayI() {
+GH2D::GH2D(const TH1 &h2d) : GH2(), TArrayD() {
     ((TH1&)h2d).Copy(*this);
 }
 
@@ -61,17 +61,11 @@ GH2D::GH2D(const TH1 &h2d) : GH2(), TArrayI() {
 GH2D::~GH2D() {  }
 
 void GH2D::AddBinContent(int bin) {
-  if(fArray[bin] < 2147483647) fArray[bin]++;
+   ++fArray[bin];
 }
 
 void GH2D::AddBinContent(int bin,double w) {
-  long newvalue = fArray[bin] + int(w);
-  if(newvalue > -2147483647 && newvalue < 2147483647) {
-    fArray[bin] = int(newvalue);
-    return;
-  }
-  if(newvalue<-2147483647) fArray[bin] = -2147483647;
-  if(newvalue>2147483647)  fArray[bin] =  2147483647;
+  fArray[bin] += Double_t (w);
 }
 
 void GH2D::Copy(TObject &obj) const {
@@ -80,13 +74,13 @@ void GH2D::Copy(TObject &obj) const {
 
 void GH2D::Reset(Option_t *opt) {
   GH2::Reset(opt);
-  TArrayI::Reset();
+  TArrayD::Reset();
 }
 
 void GH2D::SetBinsLength(int n) {
   if(n<0) n = (fXaxis.GetNbins()+2)*(fYaxis.GetNbins()+2);
   fNcells = n;
-  TArrayI::Set(n);
+  TArrayD::Set(n);
 }
 
 GH2D& GH2D::operator=(const GH2D &h1) {
