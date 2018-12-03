@@ -790,11 +790,38 @@ bool GCanvas::Process1DKeyboardPress(Event_t *event,UInt_t *keysym) {
     case kKey_B:
       edited = CycleBackgroundSubtraction();
       break;
-    case kKey_c:
-      //printf("c was pressed!\n");
+    case kKey_c: 
+       {
+       //printf("c was pressed!\n");
+       int xbins_before = hists.back()->GetNbinsX();
+       GetContextMenu()->Action(hists.back(),hists.back()->Class()->GetMethodAny("Rebin"));
+       int xbins_after  = hists.back()->GetNbinsX();
+       int bin_factor = xbins_before/xbins_after;
+   
+       TH1 *start = hists.back();
+
+       //printf("rebinning all hists by %i\n",bin_factor);
+
+       TIter iter(this->GetListOfPrimitives());
+       while(TObject *obj = iter.Next()) {
+         if(obj->InheritsFrom(TPad::Class())) {
+           TPad *pad = (TPad*)obj;
+           TIter iter2(pad->GetListOfPrimitives());
+           while(TObject *obj2=iter2.Next()) {
+             if(obj2->InheritsFrom(TH1::Class())) {
+               TH1* hist = (TH1*)obj2;
+               if(hist==start) continue;
+               hist->Rebin(bin_factor);
+               pad->Modified();
+               pad->Update();
+             }
+           }
+         }
+       }
+      }
+      edited = true;
       break;
-
-
+        
     case kKey_d:
       //printf("i am here.\n");
       if(hists.size()>0 && hists.at(0)->InheritsFrom(GH1::Class())) {
@@ -846,6 +873,8 @@ bool GCanvas::Process1DKeyboardPress(Event_t *event,UInt_t *keysym) {
       }
       edited = true;
       break;
+
+        
     case kKey_f:
       if(!hists.empty() && GetNMarkers()>1) {
         //printf("x low = %.1f\t\txhigh = %.1f\n",fMarkers.at(fMarkers.size()-2)->localx,fMarkers.back()->localx);
@@ -1205,36 +1234,109 @@ bool GCanvas::Process2DKeyboardPress(Event_t *event,UInt_t *keysym) {
     return edited;
   switch(*keysym) {
     case kKey_c:
-      //printf("%s\n",this->IsA()->GetName());
-      {
-        double ymin,ymax,xmin,xmax;
-        int    islogz = gPad->GetLogz();
-        ymin = hists.back()->GetYaxis()->GetBinLowEdge(hists.back()->GetYaxis()->GetFirst());
-        ymax = hists.back()->GetYaxis()->GetBinUpEdge(hists.back()->GetYaxis()->GetLast());
-        xmin = hists.back()->GetXaxis()->GetBinLowEdge(hists.back()->GetXaxis()->GetFirst());
-        xmax = hists.back()->GetXaxis()->GetBinUpEdge(hists.back()->GetXaxis()->GetLast());
-        TIter iter(GetListOfPrimitives());
-        while(TObject *obj = iter.Next()) {
-          if(obj->InheritsFrom(TPad::Class())) {
-            ((TPad*)obj)->SetLogz(islogz);
-            TIter iter2(((TPad*)obj)->GetListOfPrimitives());
-            while(TObject *obj2 = iter2.Next()) {
-              //printf("%s \n",obj2->GetName());
-              if(obj2->InheritsFrom(TH1::Class())) {
-                //printf("dim = %i  @  0x%08x \n",((TH1*)obj2)->GetDimension() );
+      printf("Rebinning All X!!\n");;
+      //{
+      //  double ymin,ymax,xmin,xmax;
+      //  int    islogz = gPad->GetLogz();
+      //  ymin = hists.back()->GetYaxis()->GetBinLowEdge(hists.back()->GetYaxis()->GetFirst());
+      //  ymax = hists.back()->GetYaxis()->GetBinUpEdge(hists.back()->GetYaxis()->GetLast());
+      //  xmin = hists.back()->GetXaxis()->GetBinLowEdge(hists.back()->GetXaxis()->GetFirst());
+      //  xmax = hists.back()->GetXaxis()->GetBinUpEdge(hists.back()->GetXaxis()->GetLast());
+      //  TIter iter(GetListOfPrimitives());
+      //  while(TObject *obj = iter.Next()) {
+      //    if(obj->InheritsFrom(TPad::Class())) {
+      //      ((TPad*)obj)->SetLogz(islogz);
+      //      TIter iter2(((TPad*)obj)->GetListOfPrimitives());
+      //      while(TObject *obj2 = iter2.Next()) {
+      //        //printf("%s \n",obj2->GetName());
+      //        if(obj2->InheritsFrom(TH1::Class())) {
+      //          //printf("dim = %i  @  0x%08x \n",((TH1*)obj2)->GetDimension() );
 
-                if(((TH1*)obj2)->GetDimension()==2) {
-                  ((TH1*)obj2)->GetYaxis()->SetRangeUser(ymin,ymax);
-                  ((TH1*)obj2)->GetXaxis()->SetRangeUser(xmin,xmax);
-                }
-              }
-            }
-          }
-        }
+      //          if(((TH1*)obj2)->GetDimension()==2) {
+      //            ((TH1*)obj2)->GetYaxis()->SetRangeUser(ymin,ymax);
+      //            ((TH1*)obj2)->GetXaxis()->SetRangeUser(xmin,xmax);
+      //          }
+      //        }
+      //      }
+      //    }
+      //  }
+      //}
+      //edited = true;
+      ////printf("c was pressed!\n");
+      //break;
+       {
+       //printf("c was pressed!\n");
+       int xbins_before = hists.back()->GetNbinsX();
+       GetContextMenu()->Action(hists.back(),hists.back()->Class()->GetMethodAny("RebinX"));
+       int xbins_after  = hists.back()->GetNbinsX();
+       int bin_factor = xbins_before/xbins_after;
+   
+       TH1 *start = hists.back();
+
+       //printf("rebinning all hists by %i\n",bin_factor);
+
+       TIter iter(this->GetListOfPrimitives());
+       while(TObject *obj = iter.Next()) {
+         if(obj->InheritsFrom(TPad::Class())) {
+           TPad *pad = (TPad*)obj;
+           TIter iter2(pad->GetListOfPrimitives());
+           while(TObject *obj2=iter2.Next()) {
+             if(obj2->InheritsFrom(TH1::Class())) {
+               TH1* hist = (TH1*)obj2;
+               if(hist==start) continue;
+               hist->RebinX(bin_factor);
+               pad->Modified();
+               pad->Update();
+             }
+           }
+         }
+       }
       }
       edited = true;
-      //printf("c was pressed!\n");
       break;
+
+
+    case kKey_C:
+      {
+       printf("Rebinning All Y!!\n");
+       int xbins_before = hists.back()->GetNbinsY();
+       GetContextMenu()->Action(hists.back(),hists.back()->Class()->GetMethodAny("RebinY"));
+       int xbins_after  = hists.back()->GetNbinsY();
+       int bin_factor = xbins_before/xbins_after;
+   
+       TH1 *start = hists.back();
+
+       printf("rebinning all hists by %i\n",bin_factor);
+
+       TIter iter(this->GetListOfPrimitives());
+       while(TObject *obj = iter.Next()) {
+         if(obj->InheritsFrom(TPad::Class())) {
+           TPad *pad = (TPad*)obj;
+           TIter iter2(pad->GetListOfPrimitives());
+           while(TObject *obj2=iter2.Next()) {
+               if(obj2->InheritsFrom(TH2::Class())) {
+                 TH2* hist = (TH2*)obj2;
+                 if(hist==start) continue;
+                 hist->RebinY(bin_factor);
+                 pad->Modified();
+                 pad->Update();
+               }else if(obj2->InheritsFrom(GH2D::Class())) {
+                 GH2D* hist = (GH2D*)obj2;
+                 if(hist==start) continue;
+                 hist->RebinY(bin_factor);
+                 pad->Modified();
+                 pad->Update();
+               }
+             }
+           }
+         }
+       
+      }
+      edited = true;
+      break;
+
+
+
     case kKey_e:
       if(GetNMarkers()<2)
         break;
@@ -1423,11 +1525,15 @@ bool GCanvas::Process2DKeyboardPress(Event_t *event,UInt_t *keysym) {
                        TPad *pad = (TPad*)obj;
                        TIter iter2(pad->GetListOfPrimitives());
                        while(TObject *obj2=iter2.Next()) {
-                         if(obj2->InheritsFrom(TH2::Class())) {
-                           TH2* hist = (TH2*)obj2;
-                           hist->GetYaxis()->SetRangeUser(y1,y2);
-                           pad->Modified();
-                           pad->Update();
+                        //printf("obj->GetName() = %s\n",obj2->GetName());
+                         if(obj2->InheritsFrom(TH1::Class())) {
+                           //printf("obj->GetName() = %s\n",obj2->GetName());
+                           TH1* hist = (TH1*)obj2;
+                           if(hist->GetDimension()>1) {
+                             hist->GetYaxis()->SetRangeUser(y1,y2);
+                             pad->Modified();
+                             pad->Update();
+                           }
                          }
                        }
                      }
