@@ -22,6 +22,11 @@ public:
   int GetDetnum() const;
   int GetMainSegnum() const;
 
+  //Mapped Numbers
+  int GetMapSegnum() const;
+  int GetMapPairnum() const;
+  int GetMapSlicenum() const;
+
   bool HasCore() const;
 
   unsigned int GetNumSegments() const { return fSegments.size(); }

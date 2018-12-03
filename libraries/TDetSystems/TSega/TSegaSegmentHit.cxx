@@ -1,4 +1,5 @@
 #include "TSegaSegmentHit.h"
+#include "TSega.h"
 
 #include <algorithm>
 #include <iostream>
@@ -53,6 +54,11 @@ int TSegaSegmentHit::GetSegnum() const {
     return -1;
   }
 }
+
+//Mapped Numbers
+int TSegaSegmentHit::GetMapnum() const {return TSega::MappedSegnum(GetDetnum(),GetSegnum());}
+int TSegaSegmentHit::GetPairnum() const {return TSega::MappedPairnum(GetDetnum(),GetSegnum());}
+int TSegaSegmentHit::GetSlicenum() const {return TSega::MappedSlicenum(GetDetnum(),GetSegnum());}
 
 int TSegaSegmentHit::GetCrate() const {
   return (fAddress&0x00ff0000)>>16;

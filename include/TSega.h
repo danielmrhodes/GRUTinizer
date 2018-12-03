@@ -24,6 +24,12 @@ public:
   virtual void SetRunStart(unsigned int unix_time);
 
   static TVector3 GetSegmentPosition(int detnum, int segnum);
+
+  //Geometric (Theta-Phi) Segment Maps
+  static int MappedSegnum(int detnum, int segnum); //Inidvidual segments, 1 to 512
+  static int MappedPairnum(int detnum, int segnum); //Pairs of Segments, 1 to 256 
+  static int MappedSlicenum(int detnum, int segnum); //Slices, 1 to 128
+  
   static TVector3 CrystalToGlobal(int detnum, TVector3 crystal_pos);
 
   // Allows for looping over all hits with for(auto& hit : sega) { }
@@ -33,6 +39,7 @@ public:
 private:
   virtual int BuildHits(std::vector<TRawEvent>& raw_data);
   static void LoadDetectorPositions();
+  static void LoadSegmentMaps();
 
   std::vector<TSegaHit> sega_hits;
 
@@ -43,6 +50,9 @@ private:
     TVector3 z;
   };
   static std::map<int,Transformation> detector_positions;
+  static std::map<std::array<int,2>,int> seg_map;
+  static std::map<std::array<int,2>,int> pair_map;
+  static std::map<std::array<int,2>,int> slice_map;
 
   ClassDef(TSega,2);
 };

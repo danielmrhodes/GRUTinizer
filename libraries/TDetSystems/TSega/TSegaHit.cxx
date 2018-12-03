@@ -171,6 +171,11 @@ int TSegaHit::GetMainSegnum() const {
   return output;
 }
 
+//Mapped Numbers
+int TSegaHit::GetMapSegnum() const {return TSega::MappedSegnum(GetDetnum(),GetMainSegnum());}
+int TSegaHit::GetMapPairnum() const {return TSega::MappedPairnum(GetDetnum(),GetMainSegnum());}
+int TSegaHit::GetMapSlicenum() const {return TSega::MappedSlicenum(GetDetnum(),GetMainSegnum());}
+
 TVector3 TSegaHit::GetPosition(bool apply_array_offset, TVector3 array_offset) const {
   TVector3 array_pos = TSega::GetSegmentPosition(GetDetnum(), GetMainSegnum());
   if(apply_array_offset){

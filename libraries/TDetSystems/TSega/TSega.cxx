@@ -10,6 +10,9 @@
 #include "TRawEvent.h" // added Mark
 
 std::map<int,TSega::Transformation> TSega::detector_positions;
+std::map<std::array<int,2>,int> TSega::seg_map;
+std::map<std::array<int,2>,int> TSega::pair_map;
+std::map<std::array<int,2>,int> TSega::slice_map;
 
 TSega::TSega(){ }
 
@@ -149,6 +152,91 @@ TVector3 TSega::GetSegmentPosition(int detnum, int segnum) {
 	TVector3 global_pos = CrystalToGlobal(detnum, crystal_pos);
 
 	return global_pos;
+}
+
+//Read geometric maps from text files
+void TSega::LoadSegmentMaps(){
+  static bool maps_loaded = false;
+  if (maps_loaded){
+    return;
+  }
+  
+  std::string fname = std::string(getenv("GRUTSYS")) + "/config/segment_map.txt";
+  std::ifstream f(fname);
+
+  if(!f) {
+      std::cout << "SeGA segment map file \"" << fname << "\"" << " does not exist" << std::endl;
+      return;
+  }
+
+  std::string line;
+  while(std::getline(f,line)) {
+    int det, seg, map;
+    int extracted = sscanf(line.c_str(),"{{%i,%i},%i}",&det,&seg,&map);
+
+    if(extracted != 3)
+      {std::cout << "Segment Map: Extracted = " << extracted << std::endl;}
+
+    seg_map[{det,seg}] = map;
+  }
+
+  std::string fname2 = std::string(getenv("GRUTSYS")) + "/config/pair_map.txt";
+  std::ifstream f2(fname2);
+
+  if(!f2) {
+      std::cout << "SeGA segment pair map file \"" << fname2 << "\"" << " does not exist" << std::endl;
+      return;
+  }
+
+  std::string line2;
+  while(std::getline(f2,line2)) {
+    int det2, seg2, map2;
+    int extracted2 = sscanf(line2.c_str(),"{{%i,%i},%i}",&det2,&seg2,&map2);
+
+    if(extracted2 != 3)
+      {std::cout << "Pair Map: Extracted = " << extracted2 << std::endl;}
+
+    pair_map[{det2,seg2}] = map2;
+  }
+
+  std::string fname4 = std::string(getenv("GRUTSYS")) + "/config/slice_map.txt";
+  std::ifstream f4(fname4);
+
+  if(!f4) {
+      std::cout << "SeGA slice map file \"" << fname4 << "\"" << " does not exist" << std::endl;
+      return;
+  }
+
+  std::string line4;
+  while(std::getline(f4,line4)) {
+    int det4, seg4, map4;
+    int extracted4 = sscanf(line4.c_str(),"{{%i,%i},%i}",&det4,&seg4,&map4);
+
+    if(extracted4 != 3)
+      {std::cout << "Slice Map: Extracted = " << extracted4 << std::endl;}
+
+    slice_map[{det4,seg4}] = map4;
+  }
+
+  maps_loaded = true;
+  return;
+  
+}
+
+//The Maps
+int TSega::MappedSegnum(int detnum, int segnum) {
+  LoadSegmentMaps();
+  return seg_map[{detnum,segnum}];
+}
+
+int TSega::MappedPairnum(int detnum, int segnum) {
+  LoadSegmentMaps();
+  return pair_map[{detnum,segnum}];
+}
+
+int TSega::MappedSlicenum(int detnum, int segnum) {
+  LoadSegmentMaps();
+  return slice_map[{detnum,segnum}];
 }
 
 TVector3 TSega::CrystalToGlobal(int detnum, TVector3 crystal_pos) {
