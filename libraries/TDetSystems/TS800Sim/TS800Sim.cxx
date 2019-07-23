@@ -47,8 +47,9 @@ TVector3 TS800Sim::Track(double sata,double sbta) const {
 }
 
 float TS800Sim::Azita(float ata, float bta) const{
-  float xsin = TMath::Sin(ata);
-  float ysin = TMath::Sin(bta);
+  //Dividing by 1000 because GRUTinizer uses radians for ATA/BTA
+  float xsin = TMath::Sin(ata/1000.);
+  float ysin = TMath::Sin(bta/1000.);
   float azita = 0.0;
   if(xsin>0 && ysin>0){
     azita = TMath::ATan(ysin/xsin);
