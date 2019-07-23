@@ -40,8 +40,11 @@ class GH1 : public TH1 {
     virtual bool IsSummary() const          { return TestBit(kIsSummary); }
 
     double FitEval(double *,double*);
-    TF1  *ConstructTF1() const; 
+    double FitEval2(double *,double*);
+    TF1  *ConstructTF1() const;
+    TF1  *ConstructTF1_shift() const;
     bool WriteDatFile(const char *outFile);
+    bool WriteDatFileErrors(const char *outFile);
 
     void Draw(Option_t *opt="");
 
