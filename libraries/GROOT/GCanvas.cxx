@@ -886,11 +886,14 @@ bool GCanvas::Process1DKeyboardPress(Event_t *event,UInt_t *keysym) {
 
 
     case kKey_g:
+      hists.back()->GetListOfFunctions()->Clear();
       if(GausFit(hists.back(),fMarkers.at(fMarkers.size()-2)->localx,fMarkers.back()->localx))
+	hists.back()->Draw();
         edited = true;
       break;
 
     case kKey_G:
+      hists.back()->GetListOfFunctions()->Clear();
       if(!hists.back() || !fMarkers.size()==4) {
         printf( CYAN "must have a a1 hist with 4 markers drawn" RESET_COLOR "\n");
       } else  {
@@ -903,6 +906,7 @@ bool GCanvas::Process1DKeyboardPress(Event_t *event,UInt_t *keysym) {
         std::sort(xvalues.begin(),xvalues.end());
         //std::cout << xvalues.at(1)<<"\t"<<xvalues.at(2)<<"\t"<<xvalues.at(0)<<"\t"<<xvalues.at(3)<<std::endl;
         edited = DoubleGausFit(hists.back(),xvalues.at(1),xvalues.at(2),xvalues.at(0),xvalues.at(3));
+	hists.back()->Draw();
       }
       break;
 
@@ -978,21 +982,21 @@ bool GCanvas::Process1DKeyboardPress(Event_t *event,UInt_t *keysym) {
       break;
     case kKey_M:
       SetMarkerMode(false);
-    case kKey_n:
-      RemoveMarker("all");
-      for(unsigned int i=0;i<hists.size();i++) {
-        hists.at(i)->GetListOfFunctions()->Clear();
-      }
-      for(unsigned int ii=0;ii<hists.size();ii++)
-        hists[ii]->Sumw2(false);
-      RemovePeaks(hists.data(),hists.size());
-      edited = true;
-      break;
     case kKey_N:
       RemoveMarker("all");
       for(unsigned int i=0;i<hists.size();i++) {
         hists.at(i)->GetListOfFunctions()->Clear();
       }
+      for(unsigned int ii=0;ii<hists.size();ii++)
+	hists[ii]->Sumw2(false);
+      RemovePeaks(hists.data(),hists.size());
+      edited = true;
+      break;
+    case kKey_n:
+      RemoveMarker("all");
+      //for(unsigned int i=0;i<hists.size();i++) {
+      //hists.at(i)->GetListOfFunctions()->Clear();
+      //}
       RemovePeaks(hists.data(),hists.size());
       this->Clear();
       hists.at(0)->Draw("hist");
@@ -1178,6 +1182,13 @@ bool GCanvas::Process1DKeyboardPress(Event_t *event,UInt_t *keysym) {
                    edited=true;
                  }
                  break;
+
+    case kKey_x:{
+                hists.back()->GetListOfFunctions()->Clear();
+		hists.back()->Draw("hist");
+		edited=true;
+                }
+                break;
 
     case kKey_F10:{
                   }
