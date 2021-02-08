@@ -24,6 +24,11 @@ TSRIM::TSRIM(const char *infilename, double emax, double emin, bool printfile)
   ReadEnergyLossFile(infilename,emax,emin,printfile);
 }
 
+TSRIM::TSRIM(const char *infilename, bool mod, double emax, double emin, bool printfile)
+  : TSRIM() {
+  ReadModifiedEnergyLossFile(infilename,emax,emin,printfile);
+}
+
 TSRIM::~TSRIM() {
   if(fEnergyLoss) {
     delete fEnergyLoss;
@@ -209,6 +214,161 @@ void TSRIM::ReadEnergyLossFile(const char *filename, double emax, double emin, b
     sEgetX = new TSpline3(Form("%s_Espline",filename),fEgetX);
     sEgetX->SetName(Form("%s_Espline",filename));
   }
+
+  if(printfile){
+    printf("\n\t%s file read in, %lu entries found.\n",fname.c_str(),dEdX.size());
+    printf("[Energy loss range = %.03f - %.03f keV & total range = %.03f - %.03f um ]\n",Emax,Emin,Xmin,Xmax);
+  }
+}
+
+void TSRIM::ReadModifiedEnergyLossFile(const char *filename, double emax, double emin, bool printfile) {
+// if Steffen makes a TSRIM file that this thing can't read it's beacuse of mac encoding.
+//              use dos2unix -c mac d_in_Si.txt in terminal
+  
+
+  std::ifstream infile;
+
+  std::string fname = filename;
+  if(fname.find(".txt") == std::string::npos) {
+    fname.append(".txt");
+  }
+
+  std::string grutpath = getenv("GRUTSYS");
+  std::string full_filename = grutpath + "/libraries/TSRIM/" + fname;
+  
+  if(printfile) {
+    printf("\nSearching for %s..\n",full_filename.c_str());
+  }
+
+  infile.open(full_filename);
+  if(!infile.good()){
+    printf("{TSRIM} Warning : Couldn't find the file '%s' ..\n",filename);
+    return;
+  }
+
+  std::vector<double> SE;
+  std::vector<double> SN;
+  
+  std::string line;
+  int line_num=0;
+  while(std::getline(infile,line)) {
+
+    if(line_num > 3 ) { 
+      std::stringstream linestream(line);
+
+      std::string word;
+      int word_num=0;
+      while(linestream >> word)   {
+      
+        std::stringstream ss(word);
+        double temp;
+        ss >> temp;
+
+	if(word_num==0) {
+          IonEnergy.push_back(temp);
+	}
+	else if(word_num==1) {
+	  SE.push_back(temp);
+	}
+	else {
+	  SN.push_back(temp);
+	}
+	word_num++;
+      }
+      word_num=0;
+    }
+    line_num++;
+  }
+  if(IonEnergy.size() != SE.size() || IonEnergy.size() != SN.size()) {
+    std::cout << "Failure extracting values from  modified SRIM output file " << full_filename.c_str() << std::endl;
+    return;
+  }
+
+    for(size_t i=0; i<IonEnergy.size(); i++) {
+      dEdX.push_back((SE.at(i) + SN.at(i))*1.1343E+03);
+    }
+
+    fEnergyLoss = new TGraph(IonEnergy.size(),&IonEnergy[0],&dEdX[0]);
+    fEnergyLoss->GetXaxis()->SetTitle("Energy (keV)");
+    fEnergyLoss->GetYaxis()->SetTitle("dE/dx (keV/um)");
+    sEnergyLoss = new TSpline3("dEdX_vs_E",fEnergyLoss);
+
+    double dataEmax = TMath::MaxElement(IonEnergy.size(),&IonEnergy[0]);
+    double dataEmin = TMath::MinElement(IonEnergy.size(),&IonEnergy[0]);
+
+    if(emax == -1.0) {
+      emax = dataEmax; // default to highest available energy in data table
+    } else if (emax > dataEmax || emax < dataEmin) {
+      printf("\n{TSRIM} WARNING: specified emax is out of range. Setting emax to default value (%.02f)\n",dataEmax);
+      emax = dataEmax; // default to highest available energy in data table
+    }
+
+    if(emin == 0.0) {
+      emin = dataEmin; // default to lowest available energy in data table
+    } else if (emin < dataEmin || emin > dataEmax) {
+      printf("\n{TSRIM} WARNING: specified emin is out of range. Setting emin to default value (%.02f)\n",dataEmin);
+      emin = dataEmin; // default to lowest available energy in data table
+    }
+
+    if(emax < emin) {
+      double emaxtemp = emax;
+      emax = emin;
+      emin = emaxtemp;
+    }
+
+// Use linear multistep method (order 3) - Adams-Bashford method (explicit).
+    double xtemp = 0, xstep = dx;
+    double etemp = emax;
+    double k[4] = {0,0,0,0};
+
+    for (int i=0; i<3; i++){ // start by using euler step on first few points
+      X.push_back(xtemp);
+      E.push_back(etemp);
+      k[i] = sEnergyLoss->Eval(etemp); // contains gradient at previous steps
+
+      xtemp += xstep;
+      etemp -= xstep*sEnergyLoss->Eval(etemp);
+    }
+
+    while(E.back()>0){ // keep going until E goes negative
+      X.push_back(xtemp);
+      E.push_back(etemp);
+
+      xtemp += xstep;
+      k[3] = k[2];
+      k[2] = k[1];
+      k[1] = k[0];
+      k[0] = sEnergyLoss->Eval(etemp);
+      // extrapolate to new energy using weighted average of gradients at previous points
+      etemp -= xstep*(55/24*k[0]-59/24*k[1]+37/24*k[2]-8/24*k[3]);
+    }
+    // force the last element to be emin (linear interpolation, small error)
+    X.back() = X[X.size()-2]+(X.back()-X[X.size()-2])*(emin-E[E.size()-2])/(E.back()-E[E.size()-2]);
+    E.back() = emin;
+
+    Emin = TMath::MinElement(E.size(),&E[0]);
+    Emax = TMath::MaxElement(E.size(),&E[0]);
+    Xmin = TMath::MinElement(X.size(),&X[0]);
+    Xmax = TMath::MaxElement(X.size(),&X[0]);
+
+    fXgetE = new TGraph(X.size(),&X[0],&E[0]);
+    fXgetE->SetName("XgetE");
+    fXgetE->SetTitle(filename);
+    fXgetE->GetXaxis()->SetTitle("Distance (um)");
+    fXgetE->GetYaxis()->SetTitle("Energy (keV)");
+    sXgetE = new TSpline3(Form("%s_Xspline",filename),fXgetE);
+    sXgetE->SetName(Form("%s_Xspline",filename));
+
+    fEgetX = new TGraph(E.size());
+    for(int x=E.size()-1;x>=0;x--) { // make sure x data is increasing
+      fEgetX->SetPoint(E.size()-x-1,E.at(x),X.at(x));
+    }
+    fEgetX->SetName("EgetX");
+    fEgetX->SetTitle(filename);
+    fEgetX->GetYaxis()->SetTitle("Distance (um)");
+    fEgetX->GetXaxis()->SetTitle("Energy (keV)");
+    sEgetX = new TSpline3(Form("%s_Espline",filename),fEgetX);
+    sEgetX->SetName(Form("%s_Espline",filename));
 
   if(printfile){
     printf("\n\t%s file read in, %lu entries found.\n",fname.c_str(),dEdX.size());

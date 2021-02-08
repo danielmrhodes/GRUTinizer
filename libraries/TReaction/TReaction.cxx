@@ -66,7 +66,7 @@ void TReaction::InitReaction(){
   // An initializing function that sets the energies and momenta of the beam and target in the lab and CM frame,
   // as well as a few basic calculations.
 
-  fTLab[0] = fTBeam;                                    // target kinetic energy is ebeam
+  fTLab[0] = fTBeam;                                    // beam kinetic energy is ebeam
   fELab[0] = fTLab[0] + fM[0];                          // total E of beam in lab
   fPLab[0] = sqrt(pow(fTLab[0],2)+2*fTLab[0]*fM[0]);    // momentum of beam in lab
   fVLab[0] = fPLab[0]/fELab[0];                         // velocity of beam in lab

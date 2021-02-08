@@ -29,6 +29,7 @@ void TSegaSegmentHit::SetTrace(unsigned int trace_length, const unsigned short* 
   }
 
   fTrace.clear();
+  return;
   fTrace.reserve(trace_length);
   for(unsigned int i=0; i<trace_length; i++){
     fTrace.push_back(trace[i]);

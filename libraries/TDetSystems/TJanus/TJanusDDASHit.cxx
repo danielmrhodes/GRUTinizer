@@ -92,9 +92,6 @@ void TJanusDDASHit::Print(Option_t *opt) const {
           GetDetnum(),GetFrontChannel(),GetBackChannel(),GetRing(),GetSector(),Charge(),GetEnergy());
 }
 
-
-
-
 bool TJanusDDASHit::IsRing() const {
   TChannel* chan = TChannel::GetChannel(Address());
   if(chan){
@@ -113,92 +110,69 @@ bool TJanusDDASHit::IsSector() const {
   }
 }
 
-
-TVector3 TJanusDDASHit::GetPosition(bool before, bool apply_array_offset) const {
+TVector3 TJanusDDASHit::GetPosition(bool before, bool apply_array_offset, TVector3 offset) const {
+  
   TVector3 output = TJanusDDAS::GetPosition(GetDetnum(), GetRing(), GetSector(), before);
-  if(apply_array_offset) {
-    output += TVector3(GValue::Value("Janus_X_offset"),
-                       GValue::Value("Janus_Y_offset"),
-                       GValue::Value("Janus_Z_offset"));
+
+  TVector3 off(0,0,0);
+  if(!std::isnan(offset.X()) && !std::isnan(offset.Y()) && !std::isnan(offset.Z())) {
+      off += offset;
   }
-  return output;
+  
+  if(apply_array_offset) {
+
+    if(GetDetnum()) {
+      double xoff = GValue::Value("JanusDS_X_offset");
+      if(!std::isnan(xoff)) {
+	off.SetX(off.X() + xoff);
+      }
+
+      double yoff = GValue::Value("JanusDS_Y_offset");
+      if(!std::isnan(yoff)) {
+	off.SetY(off.Y() + yoff);
+      }
+
+      double zoff = GValue::Value("JanusDS_Z_offset");
+      if(!std::isnan(zoff)) {
+	off.SetZ(off.Z() + zoff);
+      }
+    }
+    else {
+      double xoff = GValue::Value("JanusUS_X_offset");
+      if(!std::isnan(xoff)) {
+	off.SetX(off.X() + xoff);
+      }
+
+      double yoff = GValue::Value("JanusUS_Y_offset");
+      if(!std::isnan(yoff)) {
+	off.SetY(off.Y() + yoff);
+      }
+
+      double zoff = GValue::Value("JanusUS_Z_offset");
+      if(!std::isnan(zoff)) {
+	off.SetZ(off.Z() + zoff);
+      }
+    }
+    
+  }
+    
+  return output + off;
 }
 
 TVector3 TJanusDDASHit::GetReconPosition(TReaction& reac, int d_p, int r_p, bool s2, bool before,
 					 bool apply_offset) const {
 
   TVector3 det_pos = GetPosition(before,apply_offset);
-  //TVector3 recon_pos = TJanusDDAS::GetReconPosition(det_pos.Theta(),det_pos.Phi(),reac,d_p,r_p,s2);
-
-  //return recon_pos;
 
   return TJanusDDAS::GetReconPosition(det_pos.Theta(),det_pos.Phi(),reac,d_p,r_p,s2);
-  
-  //double theta = TJanusDDAS::GetReconPosition(pos.Theta(),pos.Phi(),beamname,targetname,sfile).Theta();
-  //double phi   = GetPosition(before,apply_array_offset).Phi()-TMath::Pi();
-
-  //TVector3 v;
-  //v.SetMagThetaPhi(1,theta,phi);
-  //v.SetMagThetaPhi(1,recon_pos.Theta(),recon_pos.Phi());
-  //return v;
 
 }
-/*
-TVector3 TJanusDDASHit::GetReconPosition(int d_p, int r_p, bool s2, bool before, bool apply_offset) const {
-
-  TVector3 det_pos = GetPosition(before,apply_offset);
-  return TJanusDDAS::GetReconPosition(det_pos.Theta(),det_pos.Phi(),d_p,r_p,s2);
-  
-}
-*/
-
-/*
-TVector3 TJanusDDASHit::GetReconPosition(const char *beamname, const char *targetname, const char* sfile, bool before,
-					 bool apply_array_offset) const {
-  double theta = Reconstruct(beamname,targetname,sfile,before,apply_array_offset);
-  double phi   = GetPosition(before,apply_array_offset).Phi()-3.141596;
-
-  TVector3 v;
-  v.SetMagThetaPhi(1,theta,phi);
-  return v;
-}
-*/
 
 double TJanusDDASHit::GetLabSolidAngle() const { return TJanusDDAS::LabSolidAngle(GetDetnum(),GetRing()); }
 
-double TJanusDDASHit::GetCmSolidAngle(TReaction& reac, int part, bool before) const
-{ return TJanusDDAS::CmSolidAngle(GetDetnum(),GetRing(),reac,part,before); }
-
-/*
-double TJanusDDASHit::Reconstruct(const char *beamname, const char *targetname, const char *srimfile, bool before,
-				  bool apply_array_offset) const {
-  static auto beam = std::make_shared<TNucleus>(beamname);   // "78Kr");
-  static auto targ = std::make_shared<TNucleus>(targetname); // "208Pb");
-  static TSRIM srim(srimfile); 
-  double thickness = ( GValue::Value("targetthick") / 11342.0) * 1e4; // (0.75 mg/cm^2) / (11342 mg/cm^3) * (10^4 um/cm)
-
-  //double collision_pos = gRandom->Uniform();
-
-  //double collision_energy = srim.GetAdjustedEnergy(GValue::Value("beamenergy")*1e3, thickness*collision_pos)/1e3;
-  double energy_mid = srim.GetAdjustedEnergy(GValue::Value("beamenergy")*1e3, thickness*0.5)/1e3;
-
-  //TReaction reac(beam, targ, beam, targ, collision_energy);
-  TReaction reac_mid(beam, targ, beam, targ, energy_mid);
-
-  //double targ_angle_rad = reac.ConvertThetaLab(GetPosition().Theta(),3,2);//90 * (3.1415926/180), 2, 3);
-  //double beam_angle_rad_recon = reac_mid.ConvertThetaLab(targ_angle_rad, 3, 2);
-
-  //printf("input theta: %.02f\n",GetPosition().Theta()*TMath::RadToDeg());
-  //printf("targ_angle_rad: %.02f\n",targ_angle_rad*TMath::RadToDeg());
-  //printf("beam_angle_rad_recon: %.02f\n",beam_angle_rad_recon*TMath::RadToDeg());
-
-  //return beam based on target (give 3, calculate 2).
-  return reac_mid.ConvertThetaLab(GetPosition(before,apply_array_offset).Theta(),3,2);  
+double TJanusDDASHit::GetCmSolidAngle(TReaction& reac, int part, bool before) const {
+  return TJanusDDAS::CmSolidAngle(GetDetnum(),GetRing(),reac,part,before);
 }
-*/
-
-
-
 
 
 

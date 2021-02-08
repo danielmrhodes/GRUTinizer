@@ -48,8 +48,7 @@ TDetectorHit& TSega::GetHit(int i){
 }
 
 int TSega::BuildHits(std::vector<TRawEvent>& raw_data) {
-
-
+  
 	//for(auto& event : raw_data){
 	//TNSCLEvent& nscl = (TNSCLEvent&)event;
 	//SetTimestamp(nscl.GetTimestamp()); uncommented Mark
@@ -92,7 +91,7 @@ int TSega::BuildHits(std::vector<TRawEvent>& raw_data) {
 
 		int detnum = chan->GetArrayPosition();
 		int segnum = chan->GetSegment();
-
+		
 		// Get a hit, make it if it does not exist
 		TSegaHit* hit = NULL;
 		for(auto& ihit : sega_hits){
@@ -152,6 +151,54 @@ TVector3 TSega::GetSegmentPosition(int detnum, int segnum) {
 	TVector3 global_pos = CrystalToGlobal(detnum, crystal_pos);
 
 	return global_pos;
+}
+
+TVector3 TSega::GetSegmentPosition2(int detnum, int segnum, const double angle) {
+  
+  if(detnum < 1 || detnum > 16 || segnum < 1 || segnum > 32) {
+    return TVector3(std::sqrt(-1),std::sqrt(-1),std::sqrt(-1));
+  }
+
+  const double PI = TMath::Pi();
+  
+  double segment_height = 1.0;
+  double perp_distance = 1.5;
+
+  // Middle of the segment
+  double segment_phi = PI/4.0;
+  double segment_z = segment_height/2.0;
+
+  double crystal_phi = segment_phi + (segnum-2)*PI/2.0;
+  double crystal_z = segment_z + ((segnum-1)/4)*segment_height;
+
+  TVector3 crystal_pos(1,0,0);
+  crystal_pos.SetZ(crystal_z);
+  crystal_pos.SetPhi(crystal_phi);
+  crystal_pos.SetPerp(perp_distance);
+
+  double phid; 
+  if(detnum < 9) {
+    phid = (detnum-1)*2.0*PI/8.0 + PI/8.0;
+  }
+  else {
+    phid = -(detnum-9)*2.0*PI/8.0 - PI/8.0;
+  }
+  phid += PI/2.0;
+  
+  double Zoff = 1.2;
+  if(detnum < 9) {
+    crystal_pos.SetZ(crystal_pos.Z() - Zoff);
+  }
+  
+  TVector3 axis(TMath::Cos(phid),TMath::Sin(phid),0.0);
+  crystal_pos.Rotate(angle*TMath::DegToRad(),axis);
+
+  if(detnum < 9) {
+    crystal_pos.SetZ(crystal_pos.Z() + Zoff);
+  }
+  
+  return CrystalToGlobal(detnum,crystal_pos);
+  
 }
 
 //Read geometric maps from text files

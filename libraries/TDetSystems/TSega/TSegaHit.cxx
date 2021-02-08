@@ -91,6 +91,7 @@ void TSegaHit::SetTrace(unsigned int trace_length, const unsigned short* trace) 
   }
 
   fTrace.clear();
+  return;
   fTrace.reserve(trace_length);
   for(unsigned int i=0; i<trace_length; i++){
     fTrace.push_back(trace[i]);
@@ -171,23 +172,161 @@ int TSegaHit::GetMainSegnum() const {
   return output;
 }
 
+int TSegaHit::GetMainSlicenum() const {
+
+  if(GetNumSegments()<1) {
+    return std::sqrt(-1);
+  }
+  
+  return int(GetMainSegnum() - 1)/int(4);
+  
+}
+
+int TSegaHit::GetMainQuadnum() const {
+
+  if(GetNumSegments()<1) {
+    return std::sqrt(-1);
+  }
+  
+  int segnum = GetMainSegnum();
+  if(segnum < 5) {
+    return segnum-1;
+  }
+  else if(segnum < 9) {
+    return segnum-5;
+  }
+  else if(segnum < 13) {
+    return segnum-9;
+  }
+  else if(segnum < 17) {
+    return segnum-13;
+  }
+  else if(segnum < 21) {
+    return segnum-17;
+  }
+  else if(segnum < 25) {
+    return segnum-21;
+  }
+  else if(segnum < 29) {
+    return segnum-25;
+  }
+  else {
+    return segnum-29;
+  }
+  
+}
+
 //Mapped Numbers
 int TSegaHit::GetMapSegnum() const {return TSega::MappedSegnum(GetDetnum(),GetMainSegnum());}
 int TSegaHit::GetMapPairnum() const {return TSega::MappedPairnum(GetDetnum(),GetMainSegnum());}
 int TSegaHit::GetMapSlicenum() const {return TSega::MappedSlicenum(GetDetnum(),GetMainSegnum());}
 
-TVector3 TSegaHit::GetPosition(bool apply_array_offset, TVector3 array_offset) const {
-  TVector3 array_pos = TSega::GetSegmentPosition(GetDetnum(), GetMainSegnum());
-  if(apply_array_offset){
-    if(std::isnan(array_offset.X()) &&
-       std::isnan(array_offset.Y()) &&
-       std::isnan(array_offset.Z())) {
-      array_offset = TVector3(GValue::Value("Sega_X_offset"),
-                              GValue::Value("Sega_Y_offset"),
-                              GValue::Value("Sega_Z_offset"));
-    }
-    array_pos += array_offset;
+TVector3 TSegaHit::GetPosition(bool apply_array_offset, bool apply_det_offset, TVector3 offset) const {
+  
+  TVector3 array_pos = TSega::GetSegmentPosition(GetDetnum(),GetMainSegnum());
+  if(!std::isnan(offset.X()) && !std::isnan(offset.Y()) && !std::isnan(offset.Z())) {
+      array_pos += offset;
   }
+
+  if(apply_array_offset) {
+
+    double X_off = GValue::Value("Sega_X_offset");
+    if(!std::isnan(X_off)) {
+      array_pos.SetX(array_pos.X() + X_off);
+    }
+
+    double Y_off = GValue::Value("Sega_Y_offset");
+    if(!std::isnan(Y_off)) {
+      array_pos.SetY(array_pos.Y() + Y_off);
+    }
+    
+    double Z_off = GValue::Value("Sega_Z_offset");
+    if(!std::isnan(Z_off)) {
+      array_pos.SetZ(array_pos.Z() + Z_off);
+    }
+
+  }
+
+  if(apply_det_offset) {
+    
+    double X_off = GValue::Value(Form("Sega_X_offset_%02d",GetDetnum()));
+    if(!std::isnan(X_off)) {
+      array_pos.SetX(array_pos.X() + X_off);
+    }
+
+    double Y_off = GValue::Value(Form("Sega_Y_offset_%02d",GetDetnum()));
+    if(!std::isnan(Y_off)) {
+      array_pos.SetY(array_pos.Y() + Y_off);
+    }
+    
+    double Z_off = GValue::Value(Form("Sega_Z_offset_%02d",GetDetnum()));
+    if(!std::isnan(Z_off)) {
+      array_pos.SetZ(array_pos.Z() + Z_off);
+    }
+    
+  }
+  
+  return array_pos;
+}
+
+TVector3 TSegaHit::GetPosition2(bool apply_array_offset, bool apply_det_offset, const TVector3 offset,
+				const double angle) const {
+
+  double ang = 0.0; 
+  if(apply_det_offset) {
+
+    ang = GValue::Value(Form("Sega_Rotation_%02d",GetDetnum()));
+    if(std::isnan(ang)) {
+      ang = 0.0;
+    }
+    
+  }
+  
+  TVector3 array_pos = TSega::GetSegmentPosition2(GetDetnum(),GetMainSegnum(),ang);
+  if(!std::isnan(offset.X()) && !std::isnan(offset.Y()) && !std::isnan(offset.Z())) {
+      array_pos += offset;
+  }
+
+  if(apply_array_offset) {
+
+    double X_off = GValue::Value("Sega_X_offset");
+    if(!std::isnan(X_off)) {
+      array_pos.SetX(array_pos.X() + X_off);
+    }
+
+    double Y_off = GValue::Value("Sega_Y_offset");
+    if(!std::isnan(Y_off)) {
+      array_pos.SetY(array_pos.Y() + Y_off);
+    }
+    
+    double Z_off = GValue::Value("Sega_Z_offset");
+    if(!std::isnan(Z_off)) {
+      array_pos.SetZ(array_pos.Z() + Z_off);
+    }
+
+  }
+  
+  if(apply_det_offset) {
+    
+    double X_off = GValue::Value(Form("Sega_X_offset_%02d",GetDetnum()));
+    if(!std::isnan(X_off)) {
+      array_pos.SetX(array_pos.X() + X_off);
+    }
+
+    double Y_off = GValue::Value(Form("Sega_Y_offset_%02d",GetDetnum()));
+    if(!std::isnan(Y_off)) {
+      array_pos.SetY(array_pos.Y() + Y_off);
+    }
+    
+    double Z_off = GValue::Value(Form("Sega_Z_offset_%02d",GetDetnum()));
+    if(!std::isnan(Z_off)) {
+      array_pos.SetZ(array_pos.Z() + Z_off);
+    }
+    
+  }
+
+  array_pos.RotateY(angle*TMath::DegToRad());
+  
   return array_pos;
 }
 
@@ -205,7 +344,20 @@ double TSegaHit::GetDoppler(double beta,const TVector3& particle_vec, const TVec
   }
 
   double gamma = 1/(sqrt(1-pow(beta,2)));
-  TVector3 pos = GetPosition(true, sega_offset);
+  TVector3 pos = GetPosition(true,true,sega_offset);
+  double cos_angle = TMath::Cos(pos.Angle(particle_vec));
+  double dc_en = GetEnergy()*gamma *(1 - beta*cos_angle);
+  return dc_en;
+}
+
+double TSegaHit::GetDoppler2(double beta,const TVector3& particle_vec, const TVector3& sega_offset,
+			     const double angle) const {
+  if(GetNumSegments()<1) {
+    return std::sqrt(-1);
+  }
+
+  double gamma = 1/(sqrt(1-pow(beta,2)));
+  TVector3 pos = GetPosition2(true,true,sega_offset,angle);
   double cos_angle = TMath::Cos(pos.Angle(particle_vec));
   double dc_en = GetEnergy()*gamma *(1 - beta*cos_angle);
   return dc_en;

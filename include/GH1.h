@@ -42,6 +42,8 @@ class GH1 : public TH1 {
     double FitEval(double *,double*);
     TF1  *ConstructTF1() const; 
     bool WriteDatFile(const char *outFile);
+    bool WriteDatFileErrors(const char *outFile);
+    bool WriteData(const char *outFile);
 
     void Draw(Option_t *opt="");
 

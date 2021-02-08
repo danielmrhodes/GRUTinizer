@@ -136,6 +136,8 @@ class GH2 : public GH1 {
 
     std::map<int,double> FitSummary(double low,double high,int axis=1,Option_t *opt="PhotoPeak") const;
 
+    bool WriteDatFile(const char *outFile);
+
   private:
     void    AddToProjections(GH1 *hist) const { fProjections.Add(hist); hist->SetDirectory(0); }
     mutable TList fProjections;

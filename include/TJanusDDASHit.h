@@ -33,7 +33,8 @@ public:
   double GetLabSolidAngle() const;
   double GetCmSolidAngle(TReaction& reac, int part = 2, bool before = false) const;
 
-  TVector3 GetPosition(bool before = false, bool apply_array_offset = true) const;
+  TVector3 GetPosition(bool before = false, bool apply_array_offset = true,
+		       TVector3 offset = TVector3(sqrt(-1.0),sqrt(-1.0),sqrt(-1.0))) const;
   
   TVector3 GetReconPosition(TReaction& reac, int d_p, int r_p, bool s2,
 			    bool before = false, bool apply_offset = true) const;

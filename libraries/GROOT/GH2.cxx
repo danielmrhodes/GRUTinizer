@@ -39,7 +39,7 @@
 #include "TMath.h"
 #include "TVirtualHistPainter.h"
 
-
+#include <fstream>
 
 ClassImp(GH2)
 
@@ -2930,8 +2930,8 @@ GH1D *GH2::ProjectionX_BG(const char *name,Int_t ylowbin,Int_t yhighbin,
 
 GH1D *GH2::ProjectionY_BG(const char *name,Int_t xlowbin,Int_t xhighbin, 
                                            Int_t xlowbgbin,Int_t xhighbgbin,double scale,Option_t *opt) const {
-  GH1D *add = ProjectionX("_py",xlowbin,xhighbin);
-  GH1D *sub = ProjectionX("_py",xlowbgbin,xhighbgbin);
+  GH1D *add = ProjectionY("_py",xlowbin,xhighbin);
+  GH1D *sub = ProjectionY("_py",xlowbgbin,xhighbgbin);
   if(scale>0)
     scale*=-1;
   add->Add(sub,scale);
@@ -3113,7 +3113,28 @@ std::map<int,double> GH2::FitSummary(double low,double high,int axis,Option_t *o
   return chan_area;
 }
 
+bool GH2::WriteDatFile(const char *outFile) {
+  if(strlen(outFile)<1) return false;
 
+  std::ofstream out;
+  out.open(outFile);
+
+  if(!(out.is_open())) return false;
+
+  TAxis* ax = GetXaxis();
+  TAxis* ay = GetYaxis();
+  
+  for(int by=ay->GetFirst();by<=ay->GetLast();by++) {
+    for(int bx=ax->GetFirst();bx<=ax->GetLast();bx++) {
+      out << ax->GetBinCenter(bx) << "\t" << ay->GetBinCenter(by) << "\t" << GetBinContent(bx,by) << "\n";
+    }
+  }
+  
+  out << std::endl;
+  out.close();
+
+  return true;
+}
 
 
 

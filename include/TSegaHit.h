@@ -21,6 +21,8 @@ public:
 
   int GetDetnum() const;
   int GetMainSegnum() const;
+  int GetMainSlicenum() const;
+  int GetMainQuadnum() const;
 
   //Mapped Numbers
   int GetMapSegnum() const;
@@ -51,12 +53,19 @@ public:
 
   void DrawTrace(int segnum);
 
-  TVector3 GetPosition(bool apply_array_offset = false,
-                       TVector3 array_offset = TVector3(sqrt(-1.0),sqrt(-1.0),sqrt(-1.0))) const;
+  TVector3 GetPosition(bool apply_array_offset = true, bool apply_det_offset = true,
+                       TVector3 offset = TVector3(sqrt(-1.0),sqrt(-1.0),sqrt(-1.0))) const;
 
-  double GetDoppler(double beta,
-                    const TVector3& particle_vec = TVector3(0,0,1),
+  TVector3 GetPosition2(bool apply_array_offset = true, bool apply_det_offset = true,
+			const TVector3 offset = TVector3(sqrt(-1.0),sqrt(-1.0),sqrt(-1.0)),
+			const double angle = 0.0) const;
+
+  double GetDoppler(double beta, const TVector3& particle_vec = TVector3(0,0,1),
                     const TVector3& sega_offset = TVector3(sqrt(-1.0),sqrt(-1.0),sqrt(-1.0))) const;
+
+  double GetDoppler2(double beta, const TVector3& particle_vec = TVector3(0,0,1),
+		     const TVector3& sega_offset = TVector3(sqrt(-1.0),sqrt(-1.0),sqrt(-1.0)),
+		     const double angle = 0.0) const;
 
   double GetTraceHeight() const;
   double GetTraceHeightDoppler(double beta,const TVector3& vec = TVector3(0,0,1)) const;

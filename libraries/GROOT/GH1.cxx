@@ -50,6 +50,9 @@ double GH1::FitEval(double *dim,double *par) {
 
   int binNum = GetXaxis()->FindBin(x); //gHist->GetBin() does not respect rebinning.
 
+  return scale*GetBinContent(binNum);
+
+  /*
   int nBins = GetNbinsX();
   int kevPerBin = GetXaxis()->GetXmax()/nBins;
   int curBinX = GetBinCenter(binNum);
@@ -79,6 +82,7 @@ double GH1::FitEval(double *dim,double *par) {
   }
   //std::cout << "FAILED IN HISTVALUE!" << std::endl;
   return scale * GetBinContent(binNum);
+  */
 }
 
 
@@ -98,23 +102,66 @@ TF1  *GH1::ConstructTF1() const {
 }
 
 
-bool GH1::WriteDatFile(const char *outFile){
-  if(strlen(outFile)<1) return 0;
+bool GH1::WriteDatFile(const char *outFile) {
+  if(strlen(outFile)<1) return false;
 
   std::ofstream out;
   out.open(outFile);
 
-  if(!(out.is_open())) return 0;
+  if(!(out.is_open())) return false;
 
-  for(int i=0;i<GetNbinsX();i++){
-    out << GetXaxis()->GetBinCenter(i) << "\t" << GetBinContent(i) << std::endl;
+  for(int i=1;i<GetNbinsX()+1;i++) {
+    out << GetXaxis()->GetBinCenter(i) << "\t" << GetBinContent(i) << "\n";
   }
+  out << "\n";
+  out.close();
+
+  return true;
+}
+
+bool GH1::WriteDatFileErrors(const char *outFile) {
+  if(strlen(outFile)<1) return false;
+
+  std::ofstream out;
+  out.open(outFile);
+
+  if(!(out.is_open())) return false;
+
+  for(int i=1;i<GetNbinsX()+1;i++) {
+      out << GetXaxis()->GetBinCenter(i) << "\t" << GetBinContent(i)
+	  << "\t" << GetBinError(i) << "\n";
+  }
+
+  out << "\n";
+  out.close();
+
+  return true;
+}
+
+bool GH1::WriteData(const char *outFile) {
+  if(strlen(outFile)<1) return false;
+
+  std::ofstream out;
+  out.open(outFile);
+
+  if(!(out.is_open())) return false;
+
+  for(int i=1;i<GetNbinsX()+1;i++) {
+
+    const double x = GetXaxis()->GetBinCenter(i);
+    const double n = GetBinContent(i);
+
+    for(int j=0;j<n;j++) {
+      out << x << "\n";
+    }
+    
+  }
+
   out << std::endl;
   out.close();
 
-  return 1;
+  return true;
 }
-
 
 
 void GH1::Draw(Option_t *opt) {

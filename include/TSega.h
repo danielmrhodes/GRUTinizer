@@ -24,6 +24,7 @@ public:
   virtual void SetRunStart(unsigned int unix_time);
 
   static TVector3 GetSegmentPosition(int detnum, int segnum);
+  static TVector3 GetSegmentPosition2(int detnum, int segnum, const double angle = 0.0);
 
   //Geometric (Theta-Phi) Segment Maps
   static int MappedSegnum(int detnum, int segnum); //Inidvidual segments, 1 to 512

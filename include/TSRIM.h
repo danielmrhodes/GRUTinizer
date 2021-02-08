@@ -16,9 +16,11 @@ public:
   TSRIM();
   // looks like the emax-min inputs don't work right now for 94Sr and maybe other high mass nuclei
   TSRIM(const char* infilename, double emax = -1.0, double emin = 0.0, bool printfile = false);
+  TSRIM(const char* infilename, bool mod, double emax = -1.0, double emin = 0.0, bool printfile = false);
   virtual ~TSRIM();
 
   void ReadEnergyLossFile(const char* filename, double emax = -1.0, double emin = 0.0,bool printfile = true);
+  void ReadModifiedEnergyLossFile(const char* filename, double emax = -1.0, double emin = 0.0,bool printfile = true);
 
   double GetAdjustedEnergy(double energy_keV, double distance_um, double stepsize = dx);
   double GetEnergyLost(double energy_keV, double distance_um, double stepsize = dx) {
